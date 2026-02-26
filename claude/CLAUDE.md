@@ -81,6 +81,48 @@ glm clean --days 1                     # cleanup
 glm kill JOB_ID                        # terminate
 ```
 
+### RULE: provide full context
+
+Subagents have NO access to your conversation history — every prompt MUST be deterministic and self-contained. As the supervisor, YOU are responsible for supplying all context the agent needs.
+
+**Before delegating, ask: "Does the agent need data it can't get on its own?"**
+
+- **Inline the content** when the data comes from your conversation, a tool result, or a command output that the agent cannot reproduce. Paste it directly into the prompt.
+- **Point to a file** (`Read file X at path Y`) when the data lives on disk and the agent has filesystem access via `-d`.
+- **Include command output** if the agent needs the result of a command you already ran — don't make it re-run.
+
+```
+# GOOD: file content inlined — agent has everything it needs
+glm run -d /project "Here is the current content of src/config.ts:
+\`\`\`
+$(cat src/config.ts)
+\`\`\`
+Refactor this config to use environment variables instead of hardcoded values."
+
+# GOOD: explicit path — agent can read it
+glm run -d /project "Read src/auth/middleware.ts and add rate limiting. The Express app is in src/app.ts."
+
+# GOOD: conversation context forwarded
+glm run -d /project "The user reported this error:
+'TypeError: Cannot read property id of undefined at line 42 in src/users.ts'
+Find the root cause and fix it."
+
+# BAD: vague, agent has to guess
+glm run -d /project "Fix the bug the user mentioned"
+
+# BAD: references data agent can't see
+glm run -d /project "Use the test output to fix the failing tests"
+```
+
+**Rule of thumb:** if you would need to read a file or run a command to understand the task — the agent will too. Either do it first and inline the result, or ensure `-d` gives the agent access and tell it exactly what to read.
+
+**Deterministic prompts = adequate results.** The more precise and unambiguous your prompt, the better the output. Eliminate any room for interpretation:
+- Specify exact file paths, not "the config file"
+- Specify exact function/class names, not "the handler"
+- Specify the expected output format ("return a list of ...", "edit file X, changing Y to Z")
+- Specify constraints ("do NOT modify files outside src/auth/", "keep the existing API contract")
+- If there are multiple valid approaches, pick one and state it — don't let the agent choose
+
 ### Important
 
 - Subagents do NOT know your conversation context — write SELF-CONTAINED prompts with all details

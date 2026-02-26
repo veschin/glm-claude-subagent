@@ -17,7 +17,7 @@ $ClaudeBin = (Get-Command claude -ErrorAction SilentlyContinue).Source
 $DefaultTimeout        = 3000
 $DefaultPermissionMode = "bypassPermissions"
 $DefaultMaxParallel    = 3
-$DefaultModel          = "glm-5"
+$DefaultModel          = "glm-4.7"
 
 # --- Load config ---
 $GlmConf = "$ConfigDir\glm.conf"
@@ -645,10 +645,10 @@ Flags:
   --mode MODE         Set permission mode (acceptEdits, default, plan)
 
 Config: ~/.config/GoLeM/glm.conf
-  GLM_MODEL=glm-5                  # default for all slots
-  GLM_OPUS_MODEL=glm-5             # override opus
-  GLM_SONNET_MODEL=glm-5           # override sonnet
-  GLM_HAIKU_MODEL=glm-5            # override haiku
+  GLM_MODEL=glm-4.7                  # default for all slots
+  GLM_OPUS_MODEL=glm-4.7             # override opus
+  GLM_SONNET_MODEL=glm-4.7           # override sonnet
+  GLM_HAIKU_MODEL=glm-4.7            # override haiku
   GLM_PERMISSION_MODE=acceptEdits  # default permission mode
   GLM_MAX_PARALLEL=3               # max concurrent agents (0=unlimited)
 

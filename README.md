@@ -88,7 +88,7 @@ glm update                         # self-update from GitHub
 ```bash
 glm run -d ~/project "find bugs"           # set working directory
 glm run -m glm-4 "refactor auth"           # all slots → glm-4
-glm run --opus glm-5 --haiku glm-4 "task"  # opus=glm-5, haiku=glm-4
+glm run --opus glm-4.7 --haiku glm-4 "task"  # opus=glm-4.7, haiku=glm-4
 glm session --sonnet glm-4                  # session with custom sonnet
 glm run --unsafe "deploy hotfix"            # bypass permission checks
 ```
@@ -108,7 +108,7 @@ Flags work with `session`, `run`, and `start`.
 | `--unsafe` | Bypass all permission checks (run/start only) |
 | `--mode MODE` | Permission mode: `acceptEdits`, `plan` (run/start only) |
 
-Claude Code uses three model slots internally — heavy tasks get opus, standard tasks get sonnet, fast tasks get haiku. By default all three point to `glm-5`. Use `-m` to change them all at once, or `--opus`/`--sonnet`/`--haiku` to tune individually.
+Claude Code uses three model slots internally — heavy tasks get opus, standard tasks get sonnet, fast tasks get haiku. By default all three point to `glm-4.7`. Use `-m` to change them all at once, or `--opus`/`--sonnet`/`--haiku` to tune individually.
 
 `session` also passes any extra flags directly to `claude` (e.g. `--resume`, `--verbose`).
 
@@ -118,18 +118,18 @@ Claude Code uses three model slots internally — heavy tasks get opus, standard
 
 | Variable | Default | Description |
 |---|---|---|
-| `GLM_MODEL` | `glm-5` | Default model for all three slots. When set, opus, sonnet, and haiku all use this model unless overridden individually below. |
+| `GLM_MODEL` | `glm-4.7` | Default model for all three slots. When set, opus, sonnet, and haiku all use this model unless overridden individually below. |
 | `GLM_OPUS_MODEL` | value of `GLM_MODEL` | Model for the **opus** slot. Claude Code routes heavy tasks here — planning, complex reasoning, architecture decisions. Override this to use a stronger or weaker model for those tasks. |
 | `GLM_SONNET_MODEL` | value of `GLM_MODEL` | Model for the **sonnet** slot. Standard workhorse — code generation, edits, refactoring. This is the slot `run`/`start` subagents use by default. |
 | `GLM_HAIKU_MODEL` | value of `GLM_MODEL` | Model for the **haiku** slot. Fast tasks — file search, glob, grep routing, quick classifications. Use a lighter model here to save quota and speed up. |
 | `GLM_PERMISSION_MODE` | `bypassPermissions` | Default permission mode for subagents. `bypassPermissions` — full autonomous access, no confirmation prompts. `acceptEdits` — auto-accept file edits only, asks for shell commands. Installer asks which mode to use on first run. |
 | `GLM_MAX_PARALLEL` | `3` | Maximum concurrent subagent processes. Z.AI rate-limits GLM-5 to 3 simultaneous requests, so the default matches. Excess agents queue and start automatically when a slot frees up. Set to `0` for unlimited. |
 
-**Priority:** inline flag (`-m`, `--opus` etc.) > per-slot config (`GLM_OPUS_MODEL`) > base config (`GLM_MODEL`) > default (`glm-5`).
+**Priority:** inline flag (`-m`, `--opus` etc.) > per-slot config (`GLM_OPUS_MODEL`) > base config (`GLM_MODEL`) > default (`glm-4.7`).
 
 Example config:
 ```bash
-GLM_MODEL="glm-5"
+GLM_MODEL="glm-4.7"
 GLM_HAIKU_MODEL="glm-4"          # lighter model for fast tasks
 GLM_PERMISSION_MODE="bypassPermissions"
 GLM_MAX_PARALLEL=3

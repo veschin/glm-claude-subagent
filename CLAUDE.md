@@ -53,4 +53,4 @@ No automated test suite. Validation is manual — test against a real Claude Cod
 - CLAUDE.md injection uses HTML comment markers (`<!-- GLM-SUBAGENT-START -->` / `<!-- GLM-SUBAGENT-END -->`) with awk-based replacement in both `install.sh` and `cmd_update()`
 - Changelog extraction uses inline Python 3 (not jq) to parse `raw.json` and detect EDIT/WRITE/DELETE/FS/NOTEBOOK operations
 - Job IDs are timestamp + 4 random hex bytes: `job-YYYYMMDD-HHMMSS-XXXX`
-- Config priority: CLI flags > per-slot env vars (`GLM_OPUS_MODEL` etc.) > base `GLM_MODEL` > hardcoded `glm-5`
+- Config priority: CLI flags > per-slot env vars (`GLM_OPUS_MODEL` etc.) > base `GLM_MODEL` > hardcoded `glm-4.7`

@@ -9,7 +9,7 @@ CLAUDE_BIN="$(command -v claude 2>/dev/null || echo "")"
 DEFAULT_TIMEOUT=3000
 DEFAULT_PERMISSION_MODE="bypassPermissions"
 DEFAULT_MAX_PARALLEL=3
-DEFAULT_MODEL="glm-5"
+DEFAULT_MODEL="glm-4.7"
 
 # Load config
 GLM_CONF="$CONFIG_DIR/glm.conf"
@@ -65,9 +65,53 @@ generate_job_id() {
     echo "job-$(date +%Y%m%d-%H%M%S)-$(head -c4 /dev/urandom | xxd -p)"
 }
 
+resolve_project_id() {
+    local dir="${1:-.}"
+    local abs_dir
+    abs_dir="$(cd "$dir" 2>/dev/null && pwd)" || abs_dir="$dir"
+
+    # Use git root if available, otherwise the directory itself
+    local root
+    root="$(git -C "$abs_dir" rev-parse --show-toplevel 2>/dev/null)" || root="$abs_dir"
+
+    # basename + cksum hash for readability + uniqueness
+    local name hash
+    name="$(basename "$root")"
+    hash="$(printf '%s' "$root" | cksum | cut -d' ' -f1)"
+    echo "${name}-${hash}"
+}
+
+find_job_dir() {
+    local job_id="$1"
+    # Current project first
+    local project_id
+    project_id=$(resolve_project_id ".")
+    if [[ -d "$SUBAGENT_DIR/$project_id/$job_id" ]]; then
+        echo "$SUBAGENT_DIR/$project_id/$job_id"
+        return 0
+    fi
+    # Legacy flat structure
+    if [[ -d "$SUBAGENT_DIR/$job_id" ]]; then
+        echo "$SUBAGENT_DIR/$job_id"
+        return 0
+    fi
+    # Search all projects
+    local proj_dir
+    for proj_dir in "$SUBAGENT_DIR"/*/; do
+        [[ -d "$proj_dir" ]] || continue
+        if [[ -d "${proj_dir}${job_id}" ]]; then
+            echo "${proj_dir}${job_id}"
+            return 0
+        fi
+    done
+    return 1
+}
+
 count_running_jobs() {
     local count=0
-    for job_dir in "$SUBAGENT_DIR"/job-*; do
+    local job_dir
+    # Search project-scoped dirs and legacy flat structure
+    for job_dir in "$SUBAGENT_DIR"/*/job-* "$SUBAGENT_DIR"/job-*; do
         [[ -d "$job_dir" ]] || continue
         local status
         status=$(cat "$job_dir/status" 2>/dev/null || echo "")
@@ -235,9 +279,10 @@ cmd_run() {
 
     wait_for_slot
 
-    local job_id
+    local project_id job_id
+    project_id=$(resolve_project_id "$workdir")
     job_id=$(generate_job_id)
-    local job_dir="$SUBAGENT_DIR/$job_id"
+    local job_dir="$SUBAGENT_DIR/$project_id/$job_id"
     mkdir -p "$job_dir"
 
     execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode" "$opus" "$sonnet" "$haiku"
@@ -268,9 +313,10 @@ cmd_start() {
 
     wait_for_slot
 
-    local job_id
+    local project_id job_id
+    project_id=$(resolve_project_id "$workdir")
     job_id=$(generate_job_id)
-    local job_dir="$SUBAGENT_DIR/$job_id"
+    local job_dir="$SUBAGENT_DIR/$project_id/$job_id"
     mkdir -p "$job_dir"
     echo "pending" > "$job_dir/status"
 
@@ -282,9 +328,8 @@ cmd_start() {
 
 cmd_status() {
     local job_id="$1"
-    local job_dir="$SUBAGENT_DIR/$job_id"
-
-    if [[ ! -d "$job_dir" ]]; then
+    local job_dir
+    if ! job_dir=$(find_job_dir "$job_id"); then
         echo "ERROR: Job $job_id not found" >&2
         exit 1
     fi
@@ -306,9 +351,8 @@ cmd_status() {
 
 cmd_result() {
     local job_id="$1"
-    local job_dir="$SUBAGENT_DIR/$job_id"
-
-    if [[ ! -d "$job_dir" ]]; then
+    local job_dir
+    if ! job_dir=$(find_job_dir "$job_id"); then
         echo "ERROR: Job $job_id not found" >&2
         exit 1
     fi
@@ -334,9 +378,8 @@ cmd_result() {
 
 cmd_log() {
     local job_id="$1"
-    local job_dir="$SUBAGENT_DIR/$job_id"
-
-    if [[ ! -d "$job_dir" ]]; then
+    local job_dir
+    if ! job_dir=$(find_job_dir "$job_id"); then
         echo "ERROR: Job $job_id not found" >&2
         exit 1
     fi
@@ -519,10 +562,10 @@ Flags:
   --mode MODE         Set permission mode (acceptEdits, default, plan)
 
 Config: ~/.config/GoLeM/glm.conf
-  GLM_MODEL=glm-5                  # default for all slots
-  GLM_OPUS_MODEL=glm-5             # override opus
-  GLM_SONNET_MODEL=glm-5           # override sonnet
-  GLM_HAIKU_MODEL=glm-5            # override haiku
+  GLM_MODEL=glm-4.7                # default for all slots
+  GLM_OPUS_MODEL=glm-4.7           # override opus
+  GLM_SONNET_MODEL=glm-4.7         # override sonnet
+  GLM_HAIKU_MODEL=glm-4.7          # override haiku
   GLM_PERMISSION_MODE=acceptEdits  # default permission mode
   GLM_MAX_PARALLEL=3               # max concurrent agents (0=unlimited)
 
