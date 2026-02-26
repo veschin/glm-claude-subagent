@@ -120,6 +120,26 @@ if [[ ! -f "$ZAI_ENV" ]]; then
     info "Credentials saved."
 fi
 
+# --- Permission mode ---
+GLM_CONF="$CONFIG_DIR/glm.conf"
+if [[ ! -f "$GLM_CONF" ]]; then
+    echo ""
+    echo "  Permission mode for subagents:"
+    echo "    1) acceptEdits   — auto-accept file edits (default, safe)"
+    echo "    2) bypassPermissions — skip all checks (use in sandboxes)"
+    echo ""
+    read -rp "  Choice [1]: " perm_choice
+    perm_choice="${perm_choice:-1}"
+
+    case "$perm_choice" in
+        2) perm_mode="bypassPermissions" ;;
+        *) perm_mode="acceptEdits" ;;
+    esac
+
+    echo "GLM_PERMISSION_MODE=\"$perm_mode\"" > "$GLM_CONF"
+    info "Permission mode: $perm_mode"
+fi
+
 # --- Symlink glm binary ---
 GLM_BIN="$CLONE_DIR/bin/glm"
 chmod +x "$GLM_BIN"

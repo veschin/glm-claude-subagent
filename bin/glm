@@ -2,11 +2,19 @@
 set -euo pipefail
 
 SUBAGENT_DIR="${HOME}/.claude/subagents"
-ZAI_ENV="${HOME}/.config/glm-claude-subagent/zai_api_key"
-# Fallback to legacy path
+CONFIG_DIR="${HOME}/.config/glm-claude-subagent"
+ZAI_ENV="$CONFIG_DIR/zai_api_key"
 [[ -f "$ZAI_ENV" ]] || ZAI_ENV="${HOME}/.config/zai/env"
 CLAUDE_BIN="$(command -v claude 2>/dev/null || echo "")"
 DEFAULT_TIMEOUT=3000
+DEFAULT_PERMISSION_MODE="acceptEdits"
+
+# Load config
+GLM_CONF="$CONFIG_DIR/glm.conf"
+if [[ -f "$GLM_CONF" ]]; then
+    source "$GLM_CONF"
+fi
+PERMISSION_MODE="${GLM_PERMISSION_MODE:-$DEFAULT_PERMISSION_MODE}"
 
 if [[ -z "$CLAUDE_BIN" ]]; then
     echo "ERROR: claude CLI not found in PATH" >&2
@@ -32,9 +40,9 @@ Rules:
 if [[ ! -f "$ZAI_ENV" ]]; then
     echo "ERROR: Z.AI credentials not found at $ZAI_ENV" >&2
     echo "Run install.sh or create manually:" >&2
-    echo "  mkdir -p ~/.config/zai" >&2
-    echo "  echo 'ZAI_API_KEY=\"your-key\"' > ~/.config/zai/env" >&2
-    echo "  chmod 600 ~/.config/zai/env" >&2
+    echo "  mkdir -p ~/.config/glm-claude-subagent" >&2
+    echo "  echo 'ZAI_API_KEY=\"your-key\"' > ~/.config/glm-claude-subagent/zai_api_key" >&2
+    echo "  chmod 600 ~/.config/glm-claude-subagent/zai_api_key" >&2
     exit 1
 fi
 source "$ZAI_ENV"
@@ -55,11 +63,21 @@ execute_claude() {
     local workdir="$2"
     local timeout="$3"
     local job_dir="$4"
+    local perm_mode="$5"
 
     echo "$prompt" > "$job_dir/prompt.txt"
     echo "$workdir" > "$job_dir/workdir.txt"
+    echo "$perm_mode" > "$job_dir/permission_mode.txt"
     date -Iseconds > "$job_dir/started_at.txt"
     echo "running" > "$job_dir/status"
+
+    # Build permission flags
+    local perm_flags=()
+    if [[ "$perm_mode" == "bypassPermissions" ]]; then
+        perm_flags+=(--dangerously-skip-permissions)
+    else
+        perm_flags+=(--permission-mode "$perm_mode")
+    fi
 
     local exit_code=0
     cd "$workdir"
@@ -72,13 +90,62 @@ execute_claude() {
         ANTHROPIC_DEFAULT_HAIKU_MODEL="glm-5" \
         timeout "${timeout}s" \
         "$CLAUDE_BIN" -p \
-            --dangerously-skip-permissions \
+            "${perm_flags[@]}" \
             --no-session-persistence \
             --model sonnet \
+            --output-format json \
             --append-system-prompt "$SYSTEM_PROMPT" \
             "$prompt" \
-        > "$job_dir/stdout.txt" 2> "$job_dir/stderr.txt" \
+        > "$job_dir/raw.json" 2> "$job_dir/stderr.txt" \
     || exit_code=$?
+
+    # Extract text result from JSON
+    if [[ -s "$job_dir/raw.json" ]]; then
+        # Parse JSON: extract result text and changelog
+        python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+except:
+    sys.exit(0)
+
+# Extract final text result
+result = data.get('result', '')
+with open('$job_dir/stdout.txt', 'w') as f:
+    f.write(result)
+
+# Extract changelog from tool calls
+changes = []
+for msg in data.get('messages', []):
+    if msg.get('role') != 'assistant':
+        continue
+    for block in msg.get('content', []):
+        if block.get('type') != 'tool_use':
+            continue
+        tool = block.get('name', '')
+        inp = block.get('input', {})
+        if tool == 'Edit':
+            changes.append(f'EDIT {inp.get(\"file_path\", \"?\")}: {len(inp.get(\"new_string\", \"\"))} chars')
+        elif tool == 'Write':
+            changes.append(f'WRITE {inp.get(\"file_path\", \"?\")}')
+        elif tool == 'Bash':
+            cmd = inp.get('command', '')
+            if any(w in cmd for w in ['rm ', 'rm -', 'rmdir', 'unlink']):
+                changes.append(f'DELETE via bash: {cmd[:80]}')
+            elif any(w in cmd for w in ['mv ', 'cp ', 'mkdir']):
+                changes.append(f'FS: {cmd[:80]}')
+        elif tool == 'NotebookEdit':
+            changes.append(f'NOTEBOOK {inp.get(\"notebook_path\", \"?\")}')
+
+with open('$job_dir/changelog.txt', 'w') as f:
+    for c in changes:
+        f.write(c + '\n')
+    if not changes:
+        f.write('(no file changes)\n')
+" < "$job_dir/raw.json"
+    else
+        touch "$job_dir/stdout.txt" "$job_dir/changelog.txt"
+    fi
 
     if [[ $exit_code -eq 0 ]]; then
         echo "done" > "$job_dir/status"
@@ -89,14 +156,22 @@ execute_claude() {
         echo "$exit_code" > "$job_dir/exit_code.txt"
     fi
     date -Iseconds > "$job_dir/finished_at.txt"
+
+    # Print changelog to stderr if there were changes
+    if [[ -s "$job_dir/changelog.txt" ]] && ! grep -q '(no file changes)' "$job_dir/changelog.txt"; then
+        echo "--- CHANGELOG ($job_dir) ---" >&2
+        cat "$job_dir/changelog.txt" >&2
+    fi
 }
 
 cmd_run() {
-    local workdir="." timeout="$DEFAULT_TIMEOUT" prompt=""
+    local workdir="." timeout="$DEFAULT_TIMEOUT" prompt="" perm_mode="$PERMISSION_MODE"
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -d) workdir="$2"; shift 2 ;;
             -t) timeout="$2"; shift 2 ;;
+            --unsafe) perm_mode="bypassPermissions"; shift ;;
+            --mode) perm_mode="$2"; shift 2 ;;
             *)  prompt="$*"; break ;;
         esac
     done
@@ -111,16 +186,18 @@ cmd_run() {
     local job_dir="$SUBAGENT_DIR/$job_id"
     mkdir -p "$job_dir"
 
-    execute_claude "$prompt" "$workdir" "$timeout" "$job_dir"
+    execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode"
     cat "$job_dir/stdout.txt"
 }
 
 cmd_start() {
-    local workdir="." timeout="$DEFAULT_TIMEOUT" prompt=""
+    local workdir="." timeout="$DEFAULT_TIMEOUT" prompt="" perm_mode="$PERMISSION_MODE"
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -d) workdir="$2"; shift 2 ;;
             -t) timeout="$2"; shift 2 ;;
+            --unsafe) perm_mode="bypassPermissions"; shift ;;
+            --mode) perm_mode="$2"; shift 2 ;;
             *)  prompt="$*"; break ;;
         esac
     done
@@ -136,7 +213,7 @@ cmd_start() {
     mkdir -p "$job_dir"
     echo "pending" > "$job_dir/status"
 
-    execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" &
+    execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode" &
     echo "$!" > "$job_dir/pid.txt"
 
     echo "$job_id"
@@ -194,6 +271,22 @@ cmd_result() {
     cat "$job_dir/stdout.txt"
 }
 
+cmd_log() {
+    local job_id="$1"
+    local job_dir="$SUBAGENT_DIR/$job_id"
+
+    if [[ ! -d "$job_dir" ]]; then
+        echo "ERROR: Job $job_id not found" >&2
+        exit 1
+    fi
+
+    if [[ -f "$job_dir/changelog.txt" ]]; then
+        cat "$job_dir/changelog.txt"
+    else
+        echo "(no changelog)"
+    fi
+}
+
 cmd_list() {
     printf "%-40s %-10s %-25s\n" "JOB_ID" "STATUS" "STARTED"
     printf "%-40s %-10s %-25s\n" "------" "------" "-------"
@@ -243,26 +336,35 @@ case "${1:-}" in
     start)  shift; cmd_start "$@" ;;
     status) shift; cmd_status "$@" ;;
     result) shift; cmd_result "$@" ;;
+    log)    shift; cmd_log "$@" ;;
     list)   shift; cmd_list "$@" ;;
     clean)  shift; cmd_clean "$@" ;;
     kill)   shift; cmd_kill "$@" ;;
     *)
         cat <<'USAGE'
-Usage: glm {run|start|status|result|list|clean|kill} [options]
+Usage: glm {run|start|status|result|log|list|clean|kill} [options]
 
 Commands:
-  run   [-d DIR] [-t TIMEOUT] "prompt"   Sync execution, prints result
-  start [-d DIR] [-t TIMEOUT] "prompt"   Async execution, prints job ID
-  status JOB_ID                           Check job status
-  result JOB_ID                           Get job output
-  list                                    List all jobs
-  clean [--days N]                        Remove old jobs (default: 3 days)
-  kill JOB_ID                             Terminate a running job
+  run   [-d DIR] [-t SEC] [--unsafe] "prompt"   Sync execution
+  start [-d DIR] [-t SEC] [--unsafe] "prompt"   Async execution
+  status  JOB_ID                                 Check job status
+  result  JOB_ID                                 Get text output
+  log     JOB_ID                                 Show file changes
+  list                                           List all jobs
+  clean   [--days N]                             Remove old jobs
+  kill    JOB_ID                                 Terminate job
 
-Environment:
-  Credentials: ~/.config/zai/env
-  Results:     ~/.claude/subagents/
-  Model:       GLM-5 via Z.AI
+Flags:
+  --unsafe         Bypass all permission checks
+  --mode MODE      Set permission mode (acceptEdits, default, plan)
+
+Config: ~/.config/glm-claude-subagent/glm.conf
+  GLM_PERMISSION_MODE=acceptEdits   # default permission mode
+
+Per-job files:
+  stdout.txt       Text result
+  changelog.txt    File modifications log
+  raw.json         Full JSON with all tool calls
 USAGE
         exit 1
         ;;
