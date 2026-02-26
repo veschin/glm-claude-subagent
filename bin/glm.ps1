@@ -92,6 +92,42 @@ function Generate-JobId {
     "job-$ts-$rnd"
 }
 
+function Resolve-ProjectId {
+    param([string]$Dir = ".")
+    $absDir = (Resolve-Path $Dir -ErrorAction SilentlyContinue).Path
+    if (-not $absDir) { $absDir = $Dir }
+
+    # Use git root if available, otherwise the directory itself
+    $root = git -C $absDir rev-parse --show-toplevel 2>$null
+    if (-not $root) { $root = $absDir }
+
+    $name = Split-Path $root -Leaf
+    # Simple hash: sum of char codes (cksum equivalent)
+    $hashVal = 0
+    foreach ($c in $root.ToCharArray()) { $hashVal = ($hashVal + [int]$c) * 31 }
+    $hashVal = [Math]::Abs($hashVal) % 4294967296
+    "$name-$hashVal"
+}
+
+function Find-JobDir {
+    param([string]$JobId)
+
+    # Current project first
+    $projectId = Resolve-ProjectId "."
+    $candidate = Join-Path $SubagentDir "$projectId\$JobId"
+    if (Test-Path $candidate) { return $candidate }
+
+    # Legacy flat structure
+    $candidate = Join-Path $SubagentDir $JobId
+    if (Test-Path $candidate) { return $candidate }
+
+    # Search all projects
+    $found = Get-ChildItem "$SubagentDir\*\$JobId" -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($found) { return $found.FullName }
+
+    return $null
+}
+
 function Count-RunningJobs {
     $count = 0
     $dirs = @()
@@ -355,8 +391,9 @@ function Cmd-Run {
 
     Wait-ForSlot
 
+    $projectId = Resolve-ProjectId $p.WorkDir
     $jobId  = Generate-JobId
-    $jobDir = Join-Path $SubagentDir $jobId
+    $jobDir = Join-Path $SubagentDir "$projectId\$jobId"
     New-Item -ItemType Directory -Path $jobDir -Force | Out-Null
 
     Execute-Claude -Prompt $p.Prompt -WorkDir $p.WorkDir -Timeout $p.Timeout `
@@ -375,8 +412,9 @@ function Cmd-Start {
         exit 1
     }
 
+    $projectId = Resolve-ProjectId $p.WorkDir
     $jobId  = Generate-JobId
-    $jobDir = Join-Path $SubagentDir $jobId
+    $jobDir = Join-Path $SubagentDir "$projectId\$jobId"
     New-Item -ItemType Directory -Path $jobDir -Force | Out-Null
     Set-Content (Join-Path $jobDir "prompt.txt") $p.Prompt
     Set-Content (Join-Path $jobDir "started_at.txt") (Get-Date -Format "o")
@@ -386,9 +424,134 @@ function Cmd-Start {
 
     # Run in background: wait for slot, then execute
     $job = Start-Job -ScriptBlock {
-        param($ScriptPath, $ArgsToPass)
-        & $ScriptPath run @ArgsToPass
-    } -ArgumentList $PSCommandPath, $CmdArgs
+        param($ClaudeBin, $ZaiApiKey, $SystemPrompt, $Prompt, $WorkDir, $Timeout,
+              $JobDir, $PermMode, $Opus, $Sonnet, $Haiku, $MaxParallel, $SubagentDir)
+
+        # Inline Wait-ForSlot + Count-RunningJobs
+        function Count-RunningJobs {
+            $count = 0
+            $dirs = @()
+            $dirs += Get-ChildItem "$SubagentDir\*\job-*" -Directory -ErrorAction SilentlyContinue
+            $dirs += Get-ChildItem "$SubagentDir\job-*" -Directory -ErrorAction SilentlyContinue
+            $dirs | ForEach-Object {
+                $sf = Join-Path $_.FullName "status"
+                $pf = Join-Path $_.FullName "pid.txt"
+                $st = if (Test-Path $sf) { (Get-Content $sf -Raw).Trim() } else { "" }
+                if ($st -eq "running") {
+                    if (Test-Path $pf) {
+                        $p = [int](Get-Content $pf -Raw).Trim()
+                        if (Get-Process -Id $p -ErrorAction SilentlyContinue) { $count++ }
+                    }
+                }
+            }
+            $count
+        }
+
+        if ($MaxParallel -gt 0) {
+            while ((Count-RunningJobs) -ge $MaxParallel) { Start-Sleep -Seconds 2 }
+        }
+
+        Set-Content (Join-Path $JobDir "status") "running"
+        Set-Content (Join-Path $JobDir "started_at.txt") (Get-Date -Format "o")
+
+        # Set env vars
+        $env:CLAUDECODE = $null
+        $env:CLAUDE_CODE_ENTRYPOINT = $null
+        $env:ANTHROPIC_AUTH_TOKEN = $ZaiApiKey
+        $env:ANTHROPIC_BASE_URL = "https://api.z.ai/api/anthropic"
+        $env:API_TIMEOUT_MS = "3000000"
+        $env:ANTHROPIC_DEFAULT_OPUS_MODEL = $Opus
+        $env:ANTHROPIC_DEFAULT_SONNET_MODEL = $Sonnet
+        $env:ANTHROPIC_DEFAULT_HAIKU_MODEL = $Haiku
+
+        $permFlags = @()
+        if ($PermMode -eq "bypassPermissions") {
+            $permFlags += "--dangerously-skip-permissions"
+        } else {
+            $permFlags += "--permission-mode"
+            $permFlags += $PermMode
+        }
+
+        $rawJson = Join-Path $JobDir "raw.json"
+        $stderrFile = Join-Path $JobDir "stderr.txt"
+        $stdoutFile = Join-Path $JobDir "stdout.txt"
+        $changelogFile = Join-Path $JobDir "changelog.txt"
+
+        $cliArgs = @("-p") + $permFlags + @(
+            "--no-session-persistence"
+            "--model", "sonnet"
+            "--output-format", "json"
+            "--append-system-prompt", $SystemPrompt
+            $Prompt
+        )
+
+        $exitCode = 0
+        try {
+            $proc = Start-Process -FilePath $ClaudeBin -ArgumentList $cliArgs `
+                -WorkingDirectory $WorkDir -RedirectStandardOutput $rawJson `
+                -RedirectStandardError $stderrFile -NoNewWindow -PassThru
+            $finished = $proc.WaitForExit($Timeout * 1000)
+            if (-not $finished) {
+                $proc | Stop-Process -Force -ErrorAction SilentlyContinue
+                $exitCode = 124
+            } else {
+                $exitCode = $proc.ExitCode
+            }
+        } catch {
+            $exitCode = 1
+            $_.Exception.Message | Out-File $stderrFile -Append
+        }
+
+        # Parse result
+        if ((Test-Path $rawJson) -and (Get-Item $rawJson).Length -gt 0) {
+            try {
+                $data = Get-Content $rawJson -Raw | ConvertFrom-Json
+                $result = $data.result
+                if ($null -eq $result) { $result = "" }
+                Set-Content $stdoutFile $result
+
+                $changes = @()
+                foreach ($msg in $data.messages) {
+                    if ($msg.role -ne "assistant") { continue }
+                    foreach ($block in $msg.content) {
+                        if ($block.type -ne "tool_use") { continue }
+                        switch ($block.name) {
+                            "Edit"  { $changes += "EDIT $($block.input.file_path): $($block.input.new_string.Length) chars" }
+                            "Write" { $changes += "WRITE $($block.input.file_path)" }
+                            "Bash"  {
+                                $cmd = $block.input.command
+                                if ($cmd -match "rm |rmdir|unlink") { $changes += "DELETE via bash: $($cmd.Substring(0, [Math]::Min(80, $cmd.Length)))" }
+                                elseif ($cmd -match "mv |cp |mkdir") { $changes += "FS: $($cmd.Substring(0, [Math]::Min(80, $cmd.Length)))" }
+                            }
+                            "NotebookEdit" { $changes += "NOTEBOOK $($block.input.notebook_path)" }
+                        }
+                    }
+                }
+                Set-Content $changelogFile $(if ($changes.Count -gt 0) { $changes -join "`n" } else { "(no file changes)" })
+            } catch {
+                "" | Out-File $stdoutFile
+                "(no file changes)" | Out-File $changelogFile
+            }
+        } else {
+            "" | Out-File $stdoutFile
+            "(no file changes)" | Out-File $changelogFile
+        }
+
+        # Set final status
+        if ($exitCode -eq 0) { Set-Content (Join-Path $JobDir "status") "done" }
+        elseif ($exitCode -eq 124) { Set-Content (Join-Path $JobDir "status") "timeout" }
+        else {
+            $sc = if (Test-Path $stderrFile) { Get-Content $stderrFile -Raw } else { "" }
+            if ($sc -match "(?i)permission|not allowed|denied|unauthorized") {
+                Set-Content (Join-Path $JobDir "status") "permission_error"
+            } else {
+                Set-Content (Join-Path $JobDir "status") "failed"
+            }
+            Set-Content (Join-Path $JobDir "exit_code.txt") $exitCode
+        }
+        Set-Content (Join-Path $JobDir "finished_at.txt") (Get-Date -Format "o")
+    } -ArgumentList $ClaudeBin, $ZaiApiKey, $SystemPrompt, $p.Prompt, $p.WorkDir, $p.Timeout, `
+        $jobDir, $p.PermMode, $p.Opus, $p.Sonnet, $p.Haiku, $MaxParallel, $SubagentDir
 
     Set-Content (Join-Path $jobDir "pid.txt") $job.Id
 }
@@ -396,8 +559,8 @@ function Cmd-Start {
 function Cmd-Status {
     param([string]$JobId)
 
-    $jobDir = Join-Path $SubagentDir $JobId
-    if (-not (Test-Path $jobDir)) {
+    $jobDir = Find-JobDir $JobId
+    if (-not $jobDir) {
         Write-Error "ERROR: Job $JobId not found"
         exit 1
     }
@@ -421,8 +584,8 @@ function Cmd-Status {
 function Cmd-Result {
     param([string]$JobId)
 
-    $jobDir = Join-Path $SubagentDir $JobId
-    if (-not (Test-Path $jobDir)) {
+    $jobDir = Find-JobDir $JobId
+    if (-not $jobDir) {
         Write-Error "ERROR: Job $JobId not found"
         exit 1
     }
@@ -450,8 +613,8 @@ function Cmd-Result {
 function Cmd-Log {
     param([string]$JobId)
 
-    $jobDir = Join-Path $SubagentDir $JobId
-    if (-not (Test-Path $jobDir)) {
+    $jobDir = Find-JobDir $JobId
+    if (-not $jobDir) {
         Write-Error "ERROR: Job $JobId not found"
         exit 1
     }
@@ -516,7 +679,11 @@ function Cmd-Clean {
 function Cmd-Kill {
     param([string]$JobId)
 
-    $jobDir = Join-Path $SubagentDir $JobId
+    $jobDir = Find-JobDir $JobId
+    if (-not $jobDir) {
+        Write-Error "ERROR: Job $JobId not found"
+        exit 1
+    }
     $pidFile = Join-Path $jobDir "pid.txt"
 
     if (-not (Test-Path $pidFile)) {
