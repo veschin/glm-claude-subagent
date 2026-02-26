@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# One-liner: bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh)
+# One-liner: curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh | bash
 
 REPO_URL="https://github.com/veschin/GoLeM.git"
 CLONE_DIR="/tmp/GoLeM"
@@ -26,9 +26,9 @@ err()   { echo -e "${RED}[x]${NC} $1" >&2; }
 ask_yn() {
     local prompt="$1" default="${2:-n}" yn
     if [[ "$default" == "y" ]]; then
-        read -rp "$prompt [Y/n]: " yn; yn="${yn:-y}"
+        read -rp "$prompt [Y/n]: " yn < /dev/tty; yn="${yn:-y}"
     else
-        read -rp "$prompt [y/N]: " yn; yn="${yn:-n}"
+        read -rp "$prompt [y/N]: " yn < /dev/tty; yn="${yn:-n}"
     fi
     [[ "$yn" =~ ^[Yy] ]]
 }
@@ -107,7 +107,7 @@ if [[ ! -f "$ZAI_ENV" ]]; then
     echo ""
     echo "  Get your key at: https://z.ai/subscribe (GLM Coding Plan)"
     echo ""
-    read -rsp "  Z.AI API key: " api_key
+    read -rsp "  Z.AI API key: " api_key < /dev/tty
     echo ""
 
     if [[ -z "$api_key" ]]; then
@@ -128,7 +128,7 @@ if [[ ! -f "$GLM_CONF" ]]; then
     echo "    1) bypassPermissions — full autonomous access (default)"
     echo "    2) acceptEdits       — auto-accept edits only (restricted)"
     echo ""
-    read -rp "  Choice [1]: " perm_choice
+    read -rp "  Choice [1]: " perm_choice < /dev/tty
     perm_choice="${perm_choice:-1}"
 
     case "$perm_choice" in
@@ -209,5 +209,5 @@ echo "    glm list                        # show jobs"
 echo ""
 echo "  Uninstall:"
 echo "    bash $CLONE_DIR/uninstall.sh"
-echo "    # or: bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh)"
+echo "    # or: curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh | bash"
 echo ""

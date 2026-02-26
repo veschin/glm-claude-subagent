@@ -37,7 +37,7 @@ Requires: [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [Z.
 
 **Linux / macOS / WSL:**
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh)
+curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh | bash
 ```
 
 **Windows (PowerShell):**
@@ -59,7 +59,7 @@ Pulls latest from GitHub and re-injects CLAUDE.md instructions. If local clone h
 
 **Linux / macOS / WSL:**
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh)
+curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh | bash
 ```
 
 **Windows (PowerShell):**

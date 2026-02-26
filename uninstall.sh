@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# One-liner: bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh)
+# One-liner: curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh | bash
 
 CONFIG_DIR="${HOME}/.config/GoLeM"
 CONFIG_FILE="$CONFIG_DIR/config.json"
@@ -17,9 +17,9 @@ warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
 ask_yn() {
     local prompt="$1" default="${2:-n}" yn
     if [[ "$default" == "y" ]]; then
-        read -rp "$prompt [Y/n]: " yn; yn="${yn:-y}"
+        read -rp "$prompt [Y/n]: " yn < /dev/tty; yn="${yn:-y}"
     else
-        read -rp "$prompt [y/N]: " yn; yn="${yn:-n}"
+        read -rp "$prompt [y/N]: " yn < /dev/tty; yn="${yn:-n}"
     fi
     [[ "$yn" =~ ^[Yy] ]]
 }
