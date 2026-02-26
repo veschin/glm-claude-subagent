@@ -21,11 +21,12 @@
 ## Table of Contents
 
 - [Install](#install)
+- [Update](#update)
+- [Uninstall](#uninstall)
 - [Usage](#usage)
 - [How Claude Code uses it](#how-claude-code-uses-it)
 - [Response format](#response-format)
 - [Files](#files)
-- [Uninstall](#uninstall)
 - [Platforms](#platforms)
 - [Permissions & audit](#permissions--audit)
 - [Troubleshooting](#troubleshooting)
@@ -46,9 +47,30 @@ irm https://raw.githubusercontent.com/veschin/GoLeM/main/install.ps1 | iex
 
 Clones to `/tmp`, symlinks `glm` to `~/.local/bin/`, appends instructions to `~/.claude/CLAUDE.md`, saves config to `~/.config/GoLeM/`.
 
+## Update
+
+```bash
+glm update
+```
+
+Pulls latest from GitHub and re-injects CLAUDE.md instructions. If local clone has diverged — suggests reinstall.
+
+## Uninstall
+
+**Linux / macOS / WSL:**
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh)
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.ps1 | iex
+```
+
 ## Usage
 
 ```bash
+glm session                        # interactive Claude Code on GLM-5
 glm run "your prompt"              # sync, prints result
 glm run -d ~/project "prompt"      # with working directory
 glm run --unsafe "prompt"          # bypass all permission checks
@@ -59,6 +81,7 @@ glm log JOB_ID                     # show file changes (Edit/Write/Delete)
 glm list                           # all jobs
 glm clean --days 1                 # cleanup
 glm kill JOB_ID                    # terminate
+glm update                         # self-update from GitHub
 ```
 
 ## How Claude Code uses it
@@ -88,18 +111,6 @@ Codes: `OK` `ERR_NO_FILES` `ERR_PARSE` `ERR_ACCESS` `ERR_PERMISSION` `ERR_TIMEOU
 | `~/.config/GoLeM/` | Config + API key |
 | `~/.config/GoLeM/glm.conf` | Permission mode setting |
 | `~/.claude/subagents/` | Job results (stdout, changelog, raw JSON) |
-
-## Uninstall
-
-**Linux / macOS / WSL:**
-```bash
-bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh)
-```
-
-**Windows (PowerShell):**
-```powershell
-irm https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.ps1 | iex
-```
 
 ## Platforms
 
