@@ -1,0 +1,267 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SUBAGENT_DIR="${HOME}/.claude/subagents"
+ZAI_ENV="${HOME}/.config/zai/env"
+CLAUDE_BIN="$(command -v claude 2>/dev/null || echo "")"
+DEFAULT_TIMEOUT=3000
+
+if [[ -z "$CLAUDE_BIN" ]]; then
+    echo "ERROR: claude CLI not found in PATH" >&2
+    exit 1
+fi
+
+SYSTEM_PROMPT='You are a subagent. Respond ONLY in this exact format:
+
+STATUS: OK | ERR_NO_FILES | ERR_PARSE | ERR_ACCESS | ERR_TIMEOUT | ERR_UNKNOWN
+FILES: [comma-separated list of files you read or modified, or "none"]
+---
+[your concise answer here — no greetings, no filler, no markdown headers]
+
+Rules:
+- Be extremely concise. No preamble, no "Sure!", no "Here is...".
+- For code: output raw code only, no wrapping explanation.
+- For analysis: use bullet points, max 1 line each.
+- For errors: STATUS line + one-line description of what went wrong.
+- Never repeat the prompt back. Never explain what you are about to do.
+- If the task involves multiple files, use "--- FILE: path ---" separators.'
+
+# Source Z.AI credentials
+if [[ ! -f "$ZAI_ENV" ]]; then
+    echo "ERROR: Z.AI credentials not found at $ZAI_ENV" >&2
+    echo "Run install.sh or create manually:" >&2
+    echo "  mkdir -p ~/.config/zai" >&2
+    echo "  echo 'ZAI_API_KEY=\"your-key\"' > ~/.config/zai/env" >&2
+    echo "  chmod 600 ~/.config/zai/env" >&2
+    exit 1
+fi
+source "$ZAI_ENV"
+
+if [[ -z "${ZAI_API_KEY:-}" ]]; then
+    echo "ERROR: ZAI_API_KEY is empty in $ZAI_ENV" >&2
+    exit 1
+fi
+
+mkdir -p "$SUBAGENT_DIR"
+
+generate_job_id() {
+    echo "job-$(date +%Y%m%d-%H%M%S)-$(head -c4 /dev/urandom | xxd -p)"
+}
+
+execute_claude() {
+    local prompt="$1"
+    local workdir="$2"
+    local timeout="$3"
+    local job_dir="$4"
+
+    echo "$prompt" > "$job_dir/prompt.txt"
+    echo "$workdir" > "$job_dir/workdir.txt"
+    date -Iseconds > "$job_dir/started_at.txt"
+    echo "running" > "$job_dir/status"
+
+    local exit_code=0
+    cd "$workdir"
+    env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT \
+        ANTHROPIC_AUTH_TOKEN="$ZAI_API_KEY" \
+        ANTHROPIC_BASE_URL="https://api.z.ai/api/anthropic" \
+        API_TIMEOUT_MS="3000000" \
+        ANTHROPIC_DEFAULT_OPUS_MODEL="glm-5" \
+        ANTHROPIC_DEFAULT_SONNET_MODEL="glm-5" \
+        ANTHROPIC_DEFAULT_HAIKU_MODEL="glm-5" \
+        timeout "${timeout}s" \
+        "$CLAUDE_BIN" -p \
+            --dangerously-skip-permissions \
+            --no-session-persistence \
+            --model sonnet \
+            --system-prompt "$SYSTEM_PROMPT" \
+            "$prompt" \
+        > "$job_dir/stdout.txt" 2> "$job_dir/stderr.txt" \
+    || exit_code=$?
+
+    if [[ $exit_code -eq 0 ]]; then
+        echo "done" > "$job_dir/status"
+    elif [[ $exit_code -eq 124 ]]; then
+        echo "timeout" > "$job_dir/status"
+    else
+        echo "failed" > "$job_dir/status"
+        echo "$exit_code" > "$job_dir/exit_code.txt"
+    fi
+    date -Iseconds > "$job_dir/finished_at.txt"
+}
+
+cmd_run() {
+    local workdir="." timeout="$DEFAULT_TIMEOUT" prompt=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -d) workdir="$2"; shift 2 ;;
+            -t) timeout="$2"; shift 2 ;;
+            *)  prompt="$*"; break ;;
+        esac
+    done
+
+    if [[ -z "$prompt" ]]; then
+        echo "ERROR: No prompt provided" >&2
+        exit 1
+    fi
+
+    local job_id
+    job_id=$(generate_job_id)
+    local job_dir="$SUBAGENT_DIR/$job_id"
+    mkdir -p "$job_dir"
+
+    execute_claude "$prompt" "$workdir" "$timeout" "$job_dir"
+    cat "$job_dir/stdout.txt"
+}
+
+cmd_start() {
+    local workdir="." timeout="$DEFAULT_TIMEOUT" prompt=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -d) workdir="$2"; shift 2 ;;
+            -t) timeout="$2"; shift 2 ;;
+            *)  prompt="$*"; break ;;
+        esac
+    done
+
+    if [[ -z "$prompt" ]]; then
+        echo "ERROR: No prompt provided" >&2
+        exit 1
+    fi
+
+    local job_id
+    job_id=$(generate_job_id)
+    local job_dir="$SUBAGENT_DIR/$job_id"
+    mkdir -p "$job_dir"
+    echo "pending" > "$job_dir/status"
+
+    execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" &
+    echo "$!" > "$job_dir/pid.txt"
+
+    echo "$job_id"
+}
+
+cmd_status() {
+    local job_id="$1"
+    local job_dir="$SUBAGENT_DIR/$job_id"
+
+    if [[ ! -d "$job_dir" ]]; then
+        echo "ERROR: Job $job_id not found" >&2
+        exit 1
+    fi
+
+    local status
+    status=$(cat "$job_dir/status")
+
+    if [[ "$status" == "running" || "$status" == "pending" ]] && [[ -f "$job_dir/pid.txt" ]]; then
+        local pid
+        pid=$(cat "$job_dir/pid.txt")
+        if ! kill -0 "$pid" 2>/dev/null; then
+            echo "failed" > "$job_dir/status"
+            status="failed"
+        fi
+    fi
+
+    echo "$status"
+}
+
+cmd_result() {
+    local job_id="$1"
+    local job_dir="$SUBAGENT_DIR/$job_id"
+
+    if [[ ! -d "$job_dir" ]]; then
+        echo "ERROR: Job $job_id not found" >&2
+        exit 1
+    fi
+
+    local status
+    status=$(cat "$job_dir/status")
+
+    if [[ "$status" == "running" || "$status" == "pending" ]]; then
+        echo "ERROR: Job $job_id is still $status" >&2
+        exit 1
+    fi
+
+    if [[ "$status" == "failed" || "$status" == "timeout" ]]; then
+        echo "WARNING: Job $job_id ended with status: $status" >&2
+        if [[ -s "$job_dir/stderr.txt" ]]; then
+            echo "--- STDERR ---" >&2
+            cat "$job_dir/stderr.txt" >&2
+        fi
+    fi
+
+    cat "$job_dir/stdout.txt"
+}
+
+cmd_list() {
+    printf "%-40s %-10s %-25s\n" "JOB_ID" "STATUS" "STARTED"
+    printf "%-40s %-10s %-25s\n" "------" "------" "-------"
+    for job_dir in "$SUBAGENT_DIR"/job-*; do
+        [[ -d "$job_dir" ]] || continue
+        local job_id status started
+        job_id=$(basename "$job_dir")
+        status=$(cat "$job_dir/status" 2>/dev/null || echo "unknown")
+        started=$(cat "$job_dir/started_at.txt" 2>/dev/null || echo "?")
+        printf "%-40s %-10s %-25s\n" "$job_id" "$status" "$started"
+    done
+}
+
+cmd_clean() {
+    local days=3
+    if [[ "${1:-}" == "--days" ]]; then
+        days="${2:-3}"
+    fi
+    find "$SUBAGENT_DIR" -maxdepth 1 -name "job-*" -type d -mtime "+$days" -exec rm -rf {} +
+    echo "Cleaned jobs older than $days days"
+}
+
+cmd_kill() {
+    local job_id="$1"
+    local job_dir="$SUBAGENT_DIR/$job_id"
+
+    if [[ ! -f "$job_dir/pid.txt" ]]; then
+        echo "ERROR: No PID file for $job_id" >&2
+        exit 1
+    fi
+
+    local pid
+    pid=$(cat "$job_dir/pid.txt")
+    if kill -0 "$pid" 2>/dev/null; then
+        kill -TERM "$pid" 2>/dev/null
+        sleep 1
+        kill -KILL "$pid" 2>/dev/null || true
+        echo "killed" > "$job_dir/status"
+        echo "Killed job $job_id (PID $pid)"
+    else
+        echo "Job $job_id is not running (PID $pid already dead)"
+    fi
+}
+
+case "${1:-}" in
+    run)    shift; cmd_run "$@" ;;
+    start)  shift; cmd_start "$@" ;;
+    status) shift; cmd_status "$@" ;;
+    result) shift; cmd_result "$@" ;;
+    list)   shift; cmd_list "$@" ;;
+    clean)  shift; cmd_clean "$@" ;;
+    kill)   shift; cmd_kill "$@" ;;
+    *)
+        cat <<'USAGE'
+Usage: glm {run|start|status|result|list|clean|kill} [options]
+
+Commands:
+  run   [-d DIR] [-t TIMEOUT] "prompt"   Sync execution, prints result
+  start [-d DIR] [-t TIMEOUT] "prompt"   Async execution, prints job ID
+  status JOB_ID                           Check job status
+  result JOB_ID                           Get job output
+  list                                    List all jobs
+  clean [--days N]                        Remove old jobs (default: 3 days)
+  kill JOB_ID                             Terminate a running job
+
+Environment:
+  Credentials: ~/.config/zai/env
+  Results:     ~/.claude/subagents/
+  Model:       GLM-5 via Z.AI
+USAGE
+        exit 1
+        ;;
+esac
