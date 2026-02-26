@@ -1,63 +1,56 @@
 # GLM — Claude Code Subagent powered by GLM-5
 
-Delegate tasks from Claude Code (Opus) to parallel GLM-5 agents via Z.AI. Free subagents, unlimited parallelism.
+Parallel GLM-5 agents for Claude Code via Z.AI. Free, unlimited.
 
-![Architecture](docs/architecture.svg)
+![Architecture](docs/architecture.svg?v=2)
 
-## Prerequisites
+## Table of Contents
 
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and in PATH
-- [Z.AI GLM Coding Plan](https://z.ai/subscribe) API key
+- [Install](#install)
+- [Usage](#usage)
+- [How Claude Code uses it](#how-claude-code-uses-it)
+- [Response format](#response-format)
+- [Files](#files)
+- [Uninstall](#uninstall)
+- [Platforms](#platforms)
+- [Troubleshooting](#troubleshooting)
 
-## Quick Start
+## Install
 
+Requires: [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [Z.AI Coding Plan](https://z.ai/subscribe) key.
+
+**Linux / macOS / WSL:**
 ```bash
-git clone <repo-url> ~/work/glm-claude-subagent
-cd ~/work/glm-claude-subagent
-./install.sh
+bash <(curl -sL https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/install.sh)
 ```
 
-The installer will:
-- Ask for your Z.AI API key
-- Symlink `glm` to `~/.local/bin/`
-- Add delegation instructions to `~/.claude/CLAUDE.md`
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/install.ps1 | iex
+```
+
+Clones to `/tmp`, symlinks `glm` to `~/.local/bin/`, appends instructions to `~/.claude/CLAUDE.md`, saves config to `~/.config/glm-claude-subagent/`.
 
 ## Usage
 
-### Manual usage
-
 ```bash
-# Sync — wait for result
-glm run "Analyze this Python file for bugs"
-
-# Sync — with working directory
-glm run -d ~/work/myproject "List all TODO comments"
-
-# Async — returns job ID immediately
-job=$(glm start "Write unit tests for auth module")
-glm status $job    # check: pending, running, done, failed, timeout
-glm result $job    # get output when done
-
-# Job management
-glm list              # show all jobs
-glm clean --days 1    # remove old results
-glm kill $job         # terminate running job
+glm run "your prompt"              # sync, prints result
+glm run -d ~/project "prompt"      # with working directory
+glm start "prompt"                 # async, returns job ID
+glm status JOB_ID                  # pending/running/done/failed/timeout
+glm result JOB_ID                  # get output
+glm list                           # all jobs
+glm clean --days 1                 # cleanup
+glm kill JOB_ID                    # terminate
 ```
 
-### Automatic delegation by Claude Code
+## How Claude Code uses it
 
-Once installed, every Claude Code session sees the instructions in `~/.claude/CLAUDE.md` and will:
+After install, every Claude Code session auto-delegates work to `glm` agents in parallel — each as a separate background process. Say **"delegate to glm"** and it fans out immediately.
 
-- Proactively delegate tasks to `glm` agents in parallel
-- Launch each agent as a separate background process
-- Continue working while agents run
-- Collect and synthesize results
+Z.AI env vars are injected **only** into child processes. Your main session stays on Anthropic API.
 
-Tell Claude: **"delegate to glm"** or **"let glm handle it"** — it will immediately fan out the work.
-
-### Response format
-
-GLM agents respond in a structured format to minimize token usage:
+## Response format
 
 ```
 STATUS: OK
@@ -67,66 +60,44 @@ FILES: src/auth.py, src/utils.py
 - Line 87: Missing null check on user object
 ```
 
-Status codes: `OK`, `ERR_NO_FILES`, `ERR_PARSE`, `ERR_ACCESS`, `ERR_TIMEOUT`, `ERR_UNKNOWN`
-
-## How it works
-
-```
-Claude Code (Opus 4.6)          # your main session
-  │
-  ├── glm run "task 1"          # background agent 1
-  ├── glm run "task 2"          # background agent 2
-  └── glm run "task 3"          # background agent 3
-        │
-        └── claude -p            # each runs Claude Code CLI
-              with Z.AI env vars # routed to GLM-5 via Z.AI
-```
-
-The key: Z.AI environment variables are injected **only** into child processes. Your main Claude Code session stays on Anthropic's API.
+Codes: `OK` `ERR_NO_FILES` `ERR_PARSE` `ERR_ACCESS` `ERR_TIMEOUT` `ERR_UNKNOWN`
 
 ## Files
 
-| Installed to | Purpose |
+| Path | Purpose |
 |---|---|
-| `~/.local/bin/glm` | Symlink to `bin/glm` in this repo |
-| `~/.claude/CLAUDE.md` | Delegation instructions (appended, not overwritten) |
-| `~/.config/zai/env` | API key (chmod 600) |
-| `~/.claude/subagents/` | Job results directory |
+| `~/.local/bin/glm` | Symlink to cloned `bin/glm` |
+| `~/.claude/CLAUDE.md` | Delegation instructions (between markers) |
+| `~/.config/glm-claude-subagent/` | Config + API key |
+| `~/.claude/subagents/` | Job results |
 
 ## Uninstall
 
+**Linux / macOS / WSL:**
 ```bash
-cd ~/work/glm-claude-subagent
-./uninstall.sh
+bash <(curl -sL https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/uninstall.sh)
 ```
 
-Removes symlink and CLAUDE.md section. Optionally removes credentials and job results.
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/uninstall.ps1 | iex
+```
 
-## Platform support
+## Platforms
 
 | Platform | Status |
 |---|---|
-| Linux | Full support |
-| macOS | Full support |
-| WSL | Full support |
-| Git Bash (Windows) | Partial — background jobs may behave differently |
+| Linux | Full |
+| macOS | Full |
+| WSL | Full |
+| Git Bash / PowerShell | Partial — needs bash for `glm` script |
 
 ## Troubleshooting
 
-**`claude CLI not found`** — Install Claude Code and ensure it's in PATH.
-
-**`Z.AI credentials not found`** — Run `./install.sh` or create manually:
-```bash
-mkdir -p ~/.config/zai
-echo 'ZAI_API_KEY="your-key"' > ~/.config/zai/env
-chmod 600 ~/.config/zai/env
-```
-
-**`Nested session` error** — The script unsets `CLAUDECODE` env var automatically. If you see this, ensure you're using the latest `bin/glm` from this repo.
-
-**Empty output** — Check `~/.claude/subagents/job-*/stderr.txt` for errors.
-
-**`~/.local/bin not in PATH`** — Add to your shell profile:
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-```
+| Error | Fix |
+|---|---|
+| `claude CLI not found` | Install Claude Code, add to PATH |
+| `credentials not found` | Re-run `install.sh` |
+| `Nested session` error | Update to latest `bin/glm` |
+| Empty output | Check `~/.claude/subagents/job-*/stderr.txt` |
+| `~/.local/bin` not in PATH | `export PATH="$HOME/.local/bin:$PATH"` |
