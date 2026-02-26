@@ -1,6 +1,20 @@
-# GLM — Claude Code Subagent powered by GLM-5
+<p align="center">
+  <img src="GoLeM.png" width="600" alt="GoLeM — a tiny wizard commanding clay golems to do the heavy lifting" />
+</p>
 
-Spawn autonomous Claude Code agents powered by GLM-5 via Z.AI. Each agent is a full Claude Code instance — reads files, edits code, runs tests, uses MCP servers and skills. Just routed through GLM-5 instead of Anthropic. Free, unlimited, parallel.
+<h1 align="center">GoLeM</h1>
+
+<p align="center">
+  <strong>One wizard. Unlimited golems. Zero Anthropic API costs.</strong>
+</p>
+
+<p align="center">
+  Spawn autonomous Claude Code agents powered by GLM-5 via Z.AI.<br>
+  Each golem is a full Claude Code instance — reads files, edits code, runs tests, uses MCP servers and skills.<br>
+  You stay on Opus. Your golems run free and parallel through Z.AI. Ship faster.
+</p>
+
+---
 
 ![Architecture](docs/architecture.svg?v=3)
 
@@ -22,15 +36,15 @@ Requires: [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [Z.
 
 **Linux / macOS / WSL:**
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/install.sh)
+bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh)
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/veschin/GoLeM/main/install.ps1 | iex
 ```
 
-Clones to `/tmp`, symlinks `glm` to `~/.local/bin/`, appends instructions to `~/.claude/CLAUDE.md`, saves config to `~/.config/glm-claude-subagent/`.
+Clones to `/tmp`, symlinks `glm` to `~/.local/bin/`, appends instructions to `~/.claude/CLAUDE.md`, saves config to `~/.config/GoLeM/`.
 
 ## Usage
 
@@ -71,20 +85,20 @@ Codes: `OK` `ERR_NO_FILES` `ERR_PARSE` `ERR_ACCESS` `ERR_PERMISSION` `ERR_TIMEOU
 |---|---|
 | `~/.local/bin/glm` | Symlink to cloned `bin/glm` |
 | `~/.claude/CLAUDE.md` | Delegation instructions (between markers) |
-| `~/.config/glm-claude-subagent/` | Config + API key |
-| `~/.config/glm-claude-subagent/glm.conf` | Permission mode setting |
+| `~/.config/GoLeM/` | Config + API key |
+| `~/.config/GoLeM/glm.conf` | Permission mode setting |
 | `~/.claude/subagents/` | Job results (stdout, changelog, raw JSON) |
 
 ## Uninstall
 
 **Linux / macOS / WSL:**
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/uninstall.sh)
+bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh)
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/uninstall.ps1 | iex
+irm https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.ps1 | iex
 ```
 
 ## Platforms
@@ -105,10 +119,13 @@ glm run "fix the bug"                   # uses default from glm.conf
 glm run --mode acceptEdits "fix bug"    # restricted: edits only
 ```
 
-Change default in `~/.config/glm-claude-subagent/glm.conf`:
+Change defaults in `~/.config/GoLeM/glm.conf`:
 ```bash
 GLM_PERMISSION_MODE="acceptEdits"       # or "bypassPermissions"
+GLM_MAX_PARALLEL=3                      # max concurrent agents (0=unlimited)
 ```
+
+Z.AI rate-limits GLM-5 to 3 simultaneous requests, so the default is `3`. Set to `0` to disable the limit.
 
 Every job logs all file changes to `changelog.txt`:
 ```bash

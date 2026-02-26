@@ -9,7 +9,7 @@ You have access to `glm` — a tool that spawns parallel Claude Code agents powe
 
 ### RULE: delegate everything you can
 
-Before every task, ask yourself: "Can I split this into parts and run them in parallel via glm?" If yes — DO IT. The more parallel agents the better. Don't hold back — launch 5, 10, 20 agents if the task allows it.
+Before every task, ask yourself: "Can I split this into parts and run them in parallel via glm?" If yes — DO IT. glm enforces a concurrency limit (default 3 agents, configurable via `GLM_MAX_PARALLEL` in `glm.conf`). You can launch more — excess agents will queue automatically and start when a slot frees up.
 
 **ALWAYS delegate:**
 - Codebase exploration — one agent per directory/module, all in parallel

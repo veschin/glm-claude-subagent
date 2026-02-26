@@ -1,10 +1,10 @@
-# One-liner: irm https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/install.ps1 | iex
+# One-liner: irm https://raw.githubusercontent.com/veschin/GoLeM/main/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
-$RepoUrl    = "https://github.com/veschin/glm-claude-subagent.git"
-$CloneDir   = "$env:TEMP\glm-claude-subagent"
-$ConfigDir  = "$env:USERPROFILE\.config\glm-claude-subagent"
+$RepoUrl    = "https://github.com/veschin/GoLeM.git"
+$CloneDir   = "$env:TEMP\GoLeM"
+$ConfigDir  = "$env:USERPROFILE\.config\GoLeM"
 $BinDir     = "$env:USERPROFILE\.local\bin"
 $BinFile    = "$BinDir\glm.cmd"
 $ClaudeMd   = "$env:USERPROFILE\.claude\CLAUDE.md"

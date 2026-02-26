@@ -2,12 +2,13 @@
 set -euo pipefail
 
 SUBAGENT_DIR="${HOME}/.claude/subagents"
-CONFIG_DIR="${HOME}/.config/glm-claude-subagent"
+CONFIG_DIR="${HOME}/.config/GoLeM"
 ZAI_ENV="$CONFIG_DIR/zai_api_key"
 [[ -f "$ZAI_ENV" ]] || ZAI_ENV="${HOME}/.config/zai/env"
 CLAUDE_BIN="$(command -v claude 2>/dev/null || echo "")"
 DEFAULT_TIMEOUT=3000
 DEFAULT_PERMISSION_MODE="bypassPermissions"
+DEFAULT_MAX_PARALLEL=3
 
 # Load config
 GLM_CONF="$CONFIG_DIR/glm.conf"
@@ -15,6 +16,7 @@ if [[ -f "$GLM_CONF" ]]; then
     source "$GLM_CONF"
 fi
 PERMISSION_MODE="${GLM_PERMISSION_MODE:-$DEFAULT_PERMISSION_MODE}"
+MAX_PARALLEL="${GLM_MAX_PARALLEL:-$DEFAULT_MAX_PARALLEL}"
 
 if [[ -z "$CLAUDE_BIN" ]]; then
     echo "ERROR: claude CLI not found in PATH" >&2
@@ -40,9 +42,9 @@ Rules:
 if [[ ! -f "$ZAI_ENV" ]]; then
     echo "ERROR: Z.AI credentials not found at $ZAI_ENV" >&2
     echo "Run install.sh or create manually:" >&2
-    echo "  mkdir -p ~/.config/glm-claude-subagent" >&2
-    echo "  echo 'ZAI_API_KEY=\"your-key\"' > ~/.config/glm-claude-subagent/zai_api_key" >&2
-    echo "  chmod 600 ~/.config/glm-claude-subagent/zai_api_key" >&2
+    echo "  mkdir -p ~/.config/GoLeM" >&2
+    echo "  echo 'ZAI_API_KEY=\"your-key\"' > ~/.config/GoLeM/zai_api_key" >&2
+    echo "  chmod 600 ~/.config/GoLeM/zai_api_key" >&2
     exit 1
 fi
 source "$ZAI_ENV"
@@ -56,6 +58,37 @@ mkdir -p "$SUBAGENT_DIR"
 
 generate_job_id() {
     echo "job-$(date +%Y%m%d-%H%M%S)-$(head -c4 /dev/urandom | xxd -p)"
+}
+
+count_running_jobs() {
+    local count=0
+    for job_dir in "$SUBAGENT_DIR"/job-*; do
+        [[ -d "$job_dir" ]] || continue
+        local status
+        status=$(cat "$job_dir/status" 2>/dev/null || echo "")
+        if [[ "$status" == "running" || "$status" == "pending" ]]; then
+            if [[ -f "$job_dir/pid.txt" ]]; then
+                local pid
+                pid=$(cat "$job_dir/pid.txt")
+                if kill -0 "$pid" 2>/dev/null; then
+                    count=$((count + 1))
+                fi
+            fi
+        fi
+    done
+    echo "$count"
+}
+
+wait_for_slot() {
+    [[ "$MAX_PARALLEL" -le 0 ]] && return 0  # 0 = unlimited
+    while true; do
+        local running
+        running=$(count_running_jobs)
+        if [[ "$running" -lt "$MAX_PARALLEL" ]]; then
+            return 0
+        fi
+        sleep 2
+    done
 }
 
 execute_claude() {
@@ -186,6 +219,8 @@ cmd_run() {
         exit 1
     fi
 
+    wait_for_slot
+
     local job_id
     job_id=$(generate_job_id)
     local job_dir="$SUBAGENT_DIR/$job_id"
@@ -211,6 +246,8 @@ cmd_start() {
         echo "ERROR: No prompt provided" >&2
         exit 1
     fi
+
+    wait_for_slot
 
     local job_id
     job_id=$(generate_job_id)
@@ -363,8 +400,9 @@ Flags:
   --unsafe         Bypass all permission checks
   --mode MODE      Set permission mode (acceptEdits, default, plan)
 
-Config: ~/.config/glm-claude-subagent/glm.conf
+Config: ~/.config/GoLeM/glm.conf
   GLM_PERMISSION_MODE=acceptEdits   # default permission mode
+  GLM_MAX_PARALLEL=3                # max concurrent agents (0=unlimited)
 
 Per-job files:
   stdout.txt       Text result

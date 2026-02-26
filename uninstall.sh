@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# One-liner: bash <(curl -sL https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/uninstall.sh)
+# One-liner: bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh)
 
-CONFIG_DIR="${HOME}/.config/glm-claude-subagent"
+CONFIG_DIR="${HOME}/.config/GoLeM"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 
 RED='\033[0;31m'
@@ -32,7 +32,7 @@ echo ""
 TARGET_BIN="${HOME}/.local/bin/glm"
 TARGET_CLAUDE_MD="${HOME}/.claude/CLAUDE.md"
 TARGET_SUBAGENTS="${HOME}/.claude/subagents"
-CLONE_DIR="/tmp/glm-claude-subagent"
+CLONE_DIR="/tmp/GoLeM"
 
 if [[ -f "$CONFIG_FILE" ]]; then
     CLONE_DIR="$(grep '"clone_dir"' "$CONFIG_FILE" | cut -d'"' -f4 2>/dev/null || echo "$CLONE_DIR")"

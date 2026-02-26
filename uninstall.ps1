@@ -1,13 +1,13 @@
-# One-liner: irm https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/uninstall.ps1 | iex
+# One-liner: irm https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
-$ConfigDir  = "$env:USERPROFILE\.config\glm-claude-subagent"
+$ConfigDir  = "$env:USERPROFILE\.config\GoLeM"
 $ConfigFile = "$ConfigDir\config.json"
 $BinFile    = "$env:USERPROFILE\.local\bin\glm.cmd"
 $ClaudeMd   = "$env:USERPROFILE\.claude\CLAUDE.md"
 $Subagents  = "$env:USERPROFILE\.claude\subagents"
-$CloneDir   = "$env:TEMP\glm-claude-subagent"
+$CloneDir   = "$env:TEMP\GoLeM"
 
 $MarkerStart = "<!-- GLM-SUBAGENT-START -->"
 $MarkerEnd   = "<!-- GLM-SUBAGENT-END -->"

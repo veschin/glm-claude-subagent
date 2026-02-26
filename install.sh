@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# One-liner: bash <(curl -sL https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/install.sh)
+# One-liner: bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh)
 
-REPO_URL="https://github.com/veschin/glm-claude-subagent.git"
-CLONE_DIR="/tmp/glm-claude-subagent"
-CONFIG_DIR="${HOME}/.config/glm-claude-subagent"
+REPO_URL="https://github.com/veschin/GoLeM.git"
+CLONE_DIR="/tmp/GoLeM"
+CONFIG_DIR="${HOME}/.config/GoLeM"
 TARGET_BIN_DIR="${HOME}/.local/bin"
 TARGET_BIN="${TARGET_BIN_DIR}/glm"
 TARGET_CLAUDE_MD="${HOME}/.claude/CLAUDE.md"
@@ -209,5 +209,5 @@ echo "    glm list                        # show jobs"
 echo ""
 echo "  Uninstall:"
 echo "    bash $CLONE_DIR/uninstall.sh"
-echo "    # or: bash <(curl -sL https://raw.githubusercontent.com/veschin/glm-claude-subagent/main/uninstall.sh)"
+echo "    # or: bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh)"
 echo ""
