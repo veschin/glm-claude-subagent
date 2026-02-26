@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 
 $ConfigDir  = "$env:USERPROFILE\.config\GoLeM"
 $ConfigFile = "$ConfigDir\config.json"
-$BinFile    = "$env:USERPROFILE\.local\bin\glm.cmd"
+$BinFile    = "$env:USERPROFILE\.local\bin\glm.ps1"
 $ClaudeMd   = "$env:USERPROFILE\.claude\CLAUDE.md"
 $Subagents  = "$env:USERPROFILE\.claude\subagents"
 $CloneDir   = "$env:TEMP\GoLeM"
@@ -25,12 +25,12 @@ if (Test-Path $ConfigFile) {
     Info "Found config at $ConfigFile"
 }
 
-# --- Remove glm.cmd ---
+# --- Remove glm.ps1 ---
 if (Test-Path $BinFile) {
     Remove-Item $BinFile
     Info "Removed $BinFile"
 } else {
-    Info "No glm.cmd found. Skipping."
+    Info "No glm.ps1 found. Skipping."
 }
 
 # --- Remove GLM section from CLAUDE.md ---

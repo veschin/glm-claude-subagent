@@ -6,7 +6,7 @@ $RepoUrl    = "https://github.com/veschin/GoLeM.git"
 $CloneDir   = "$env:TEMP\GoLeM"
 $ConfigDir  = "$env:USERPROFILE\.config\GoLeM"
 $BinDir     = "$env:USERPROFILE\.local\bin"
-$BinFile    = "$BinDir\glm.cmd"
+$BinFile    = "$BinDir\glm.ps1"
 $ClaudeMd   = "$env:USERPROFILE\.claude\CLAUDE.md"
 $Subagents  = "$env:USERPROFILE\.claude\subagents"
 
@@ -78,15 +78,11 @@ if (-not (Test-Path $ZaiEnv)) {
     Info "Credentials saved."
 }
 
-# --- glm.cmd wrapper ---
+# --- Copy glm.ps1 ---
 New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
 
-$GlmScript = "$CloneDir\bin\glm"
-@"
-@echo off
-bash "$GlmScript" %*
-"@ | Set-Content $BinFile
-Info "Created $BinFile"
+Copy-Item "$CloneDir\bin\glm.ps1" $BinFile -Force
+Info "Installed $BinFile"
 
 # --- Check PATH ---
 $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
@@ -134,5 +130,4 @@ Write-Host "    glm run `"your prompt`"        # sync"
 Write-Host "    glm start `"your prompt`"      # async"
 Write-Host "    glm list                        # show jobs"
 Write-Host ""
-Write-Host "  Note: Requires bash (Git Bash or WSL). The glm.cmd wrapper calls bash."
 Write-Host ""
