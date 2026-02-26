@@ -19,6 +19,9 @@ fi
 PERMISSION_MODE="${GLM_PERMISSION_MODE:-$DEFAULT_PERMISSION_MODE}"
 MAX_PARALLEL="${GLM_MAX_PARALLEL:-$DEFAULT_MAX_PARALLEL}"
 MODEL="${GLM_MODEL:-$DEFAULT_MODEL}"
+OPUS_MODEL="${GLM_OPUS_MODEL:-$MODEL}"
+SONNET_MODEL="${GLM_SONNET_MODEL:-$MODEL}"
+HAIKU_MODEL="${GLM_HAIKU_MODEL:-$MODEL}"
 
 if [[ -z "$CLAUDE_BIN" ]]; then
     echo "ERROR: claude CLI not found in PATH" >&2
@@ -99,12 +102,14 @@ execute_claude() {
     local timeout="$3"
     local job_dir="$4"
     local perm_mode="$5"
-    local model="$6"
+    local opus="$6"
+    local sonnet="$7"
+    local haiku="$8"
 
     echo "$prompt" > "$job_dir/prompt.txt"
     echo "$workdir" > "$job_dir/workdir.txt"
     echo "$perm_mode" > "$job_dir/permission_mode.txt"
-    echo "$model" > "$job_dir/model.txt"
+    echo "opus=$opus sonnet=$sonnet haiku=$haiku" > "$job_dir/model.txt"
     date -Iseconds > "$job_dir/started_at.txt"
     echo "running" > "$job_dir/status"
 
@@ -122,9 +127,9 @@ execute_claude() {
         ANTHROPIC_AUTH_TOKEN="$ZAI_API_KEY" \
         ANTHROPIC_BASE_URL="https://api.z.ai/api/anthropic" \
         API_TIMEOUT_MS="3000000" \
-        ANTHROPIC_DEFAULT_OPUS_MODEL="$model" \
-        ANTHROPIC_DEFAULT_SONNET_MODEL="$model" \
-        ANTHROPIC_DEFAULT_HAIKU_MODEL="$model" \
+        ANTHROPIC_DEFAULT_OPUS_MODEL="$opus" \
+        ANTHROPIC_DEFAULT_SONNET_MODEL="$sonnet" \
+        ANTHROPIC_DEFAULT_HAIKU_MODEL="$haiku" \
         timeout "${timeout}s" \
         "$CLAUDE_BIN" -p \
             "${perm_flags[@]}" \
@@ -207,12 +212,16 @@ with open('$job_dir/changelog.txt', 'w') as f:
 }
 
 cmd_run() {
-    local workdir="." timeout="$DEFAULT_TIMEOUT" prompt="" perm_mode="$PERMISSION_MODE" model="$MODEL"
+    local workdir="." timeout="$DEFAULT_TIMEOUT" prompt="" perm_mode="$PERMISSION_MODE"
+    local opus="$OPUS_MODEL" sonnet="$SONNET_MODEL" haiku="$HAIKU_MODEL"
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -d) workdir="$2"; shift 2 ;;
             -t) timeout="$2"; shift 2 ;;
-            -m|--model) model="$2"; shift 2 ;;
+            -m|--model)  opus="$2"; sonnet="$2"; haiku="$2"; shift 2 ;;
+            --opus)      opus="$2"; shift 2 ;;
+            --sonnet)    sonnet="$2"; shift 2 ;;
+            --haiku)     haiku="$2"; shift 2 ;;
             --unsafe) perm_mode="bypassPermissions"; shift ;;
             --mode) perm_mode="$2"; shift 2 ;;
             *)  prompt="$*"; break ;;
@@ -231,17 +240,21 @@ cmd_run() {
     local job_dir="$SUBAGENT_DIR/$job_id"
     mkdir -p "$job_dir"
 
-    execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode" "$model"
+    execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode" "$opus" "$sonnet" "$haiku"
     cat "$job_dir/stdout.txt"
 }
 
 cmd_start() {
-    local workdir="." timeout="$DEFAULT_TIMEOUT" prompt="" perm_mode="$PERMISSION_MODE" model="$MODEL"
+    local workdir="." timeout="$DEFAULT_TIMEOUT" prompt="" perm_mode="$PERMISSION_MODE"
+    local opus="$OPUS_MODEL" sonnet="$SONNET_MODEL" haiku="$HAIKU_MODEL"
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -d) workdir="$2"; shift 2 ;;
             -t) timeout="$2"; shift 2 ;;
-            -m|--model) model="$2"; shift 2 ;;
+            -m|--model)  opus="$2"; sonnet="$2"; haiku="$2"; shift 2 ;;
+            --opus)      opus="$2"; shift 2 ;;
+            --sonnet)    sonnet="$2"; shift 2 ;;
+            --haiku)     haiku="$2"; shift 2 ;;
             --unsafe) perm_mode="bypassPermissions"; shift ;;
             --mode) perm_mode="$2"; shift 2 ;;
             *)  prompt="$*"; break ;;
@@ -261,7 +274,7 @@ cmd_start() {
     mkdir -p "$job_dir"
     echo "pending" > "$job_dir/status"
 
-    execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode" "$model" &
+    execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode" "$opus" "$sonnet" "$haiku" &
     echo "$!" > "$job_dir/pid.txt"
 
     echo "$job_id"
@@ -446,14 +459,26 @@ cmd_update() {
 }
 
 cmd_session() {
+    local opus="$OPUS_MODEL" sonnet="$SONNET_MODEL" haiku="$HAIKU_MODEL"
+    local args=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -m|--model)  opus="$2"; sonnet="$2"; haiku="$2"; shift 2 ;;
+            --opus)      opus="$2"; shift 2 ;;
+            --sonnet)    sonnet="$2"; shift 2 ;;
+            --haiku)     haiku="$2"; shift 2 ;;
+            *)           args+=("$1"); shift ;;
+        esac
+    done
+
     env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT \
         ANTHROPIC_AUTH_TOKEN="$ZAI_API_KEY" \
         ANTHROPIC_BASE_URL="https://api.z.ai/api/anthropic" \
         API_TIMEOUT_MS="3000000" \
-        ANTHROPIC_DEFAULT_OPUS_MODEL="$MODEL" \
-        ANTHROPIC_DEFAULT_SONNET_MODEL="$MODEL" \
-        ANTHROPIC_DEFAULT_HAIKU_MODEL="$MODEL" \
-        "$CLAUDE_BIN" "$@"
+        ANTHROPIC_DEFAULT_OPUS_MODEL="$opus" \
+        ANTHROPIC_DEFAULT_SONNET_MODEL="$sonnet" \
+        ANTHROPIC_DEFAULT_HAIKU_MODEL="$haiku" \
+        "$CLAUDE_BIN" "${args[@]+"${args[@]}"}"
 }
 
 case "${1:-}" in
@@ -472,9 +497,9 @@ case "${1:-}" in
 Usage: glm {session|run|start|status|result|log|list|clean|kill|update} [options]
 
 Commands:
-  session [--model MODEL] [claude flags]          Interactive Claude Code
-  run   [-d DIR] [-t SEC] [-m MODEL] "prompt"   Sync execution
-  start [-d DIR] [-t SEC] [-m MODEL] "prompt"   Async execution
+  session [flags] [claude flags]                 Interactive Claude Code
+  run   [flags] "prompt"                         Sync execution
+  start [flags] "prompt"                         Async execution
   status  JOB_ID                                 Check job status
   result  JOB_ID                                 Get text output
   log     JOB_ID                                 Show file changes
@@ -484,12 +509,20 @@ Commands:
   update                                         Self-update from GitHub
 
 Flags:
-  -m, --model MODEL   Model name (default: from config or glm-5)
+  -d DIR              Working directory
+  -t SEC              Timeout in seconds
+  -m, --model MODEL   Set all three model slots to MODEL
+  --opus MODEL        Set opus model
+  --sonnet MODEL      Set sonnet model
+  --haiku MODEL       Set haiku model
   --unsafe            Bypass all permission checks
   --mode MODE         Set permission mode (acceptEdits, default, plan)
 
 Config: ~/.config/GoLeM/glm.conf
-  GLM_MODEL=glm-5                  # default model
+  GLM_MODEL=glm-5                  # default for all slots
+  GLM_OPUS_MODEL=glm-5             # override opus
+  GLM_SONNET_MODEL=glm-5           # override sonnet
+  GLM_HAIKU_MODEL=glm-5            # override haiku
   GLM_PERMISSION_MODE=acceptEdits  # default permission mode
   GLM_MAX_PARALLEL=3               # max concurrent agents (0=unlimited)
 

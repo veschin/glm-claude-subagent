@@ -24,6 +24,7 @@
 - [Update](#update)
 - [Uninstall](#uninstall)
 - [Usage](#usage)
+- [Flags](#flags)
 - [How Claude Code uses it](#how-claude-code-uses-it)
 - [Response format](#response-format)
 - [Files](#files)
@@ -71,20 +72,44 @@ irm https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.ps1 | iex
 
 ```bash
 glm session                        # interactive Claude Code on GLM-5
-glm session --model glm-4           # use a different model
 glm run "your prompt"              # sync, prints result
-glm run -d ~/project "prompt"      # with working directory
-glm run -m glm-4 "prompt"         # run with specific model
-glm run --unsafe "prompt"          # bypass all permission checks
 glm start "prompt"                 # async, returns job ID
-glm status JOB_ID                  # pending/running/done/failed/permission_error
+glm status JOB_ID                  # check job status
 glm result JOB_ID                  # get text output
-glm log JOB_ID                     # show file changes (Edit/Write/Delete)
+glm log JOB_ID                     # show file changes
 glm list                           # all jobs
-glm clean --days 1                 # cleanup
-glm kill JOB_ID                    # terminate
+glm clean --days 1                 # cleanup old jobs
+glm kill JOB_ID                    # terminate job
 glm update                         # self-update from GitHub
 ```
+
+**Examples:**
+```bash
+glm run -d ~/project "find bugs"           # set working directory
+glm run -m glm-4 "refactor auth"           # all slots → glm-4
+glm run --opus glm-5 --haiku glm-4 "task"  # opus=glm-5, haiku=glm-4
+glm session --sonnet glm-4                  # session with custom sonnet
+glm run --unsafe "deploy hotfix"            # bypass permission checks
+```
+
+## Flags
+
+Flags work with `session`, `run`, and `start`.
+
+| Flag | Description |
+|---|---|
+| `-m`, `--model MODEL` | Set **all three** model slots (opus, sonnet, haiku) to MODEL |
+| `--opus MODEL` | Set opus model only |
+| `--sonnet MODEL` | Set sonnet model only |
+| `--haiku MODEL` | Set haiku model only |
+| `-d DIR` | Working directory (run/start only) |
+| `-t SEC` | Timeout in seconds (run/start only) |
+| `--unsafe` | Bypass all permission checks (run/start only) |
+| `--mode MODE` | Permission mode: `acceptEdits`, `plan` (run/start only) |
+
+Claude Code uses three model slots internally — heavy tasks get opus, standard tasks get sonnet, fast tasks get haiku. By default all three point to `glm-5`. Use `-m` to change them all at once, or `--opus`/`--sonnet`/`--haiku` to tune individually.
+
+`session` also passes any extra flags directly to `claude` (e.g. `--resume`, `--verbose`).
 
 ## How Claude Code uses it
 
@@ -134,7 +159,10 @@ glm run --mode acceptEdits "fix bug"    # restricted: edits only
 
 Change defaults in `~/.config/GoLeM/glm.conf`:
 ```bash
-GLM_MODEL="glm-5"                       # default model for run/start
+GLM_MODEL="glm-5"                       # default for all three slots
+GLM_OPUS_MODEL="glm-5"                  # override opus slot
+GLM_SONNET_MODEL="glm-5"                # override sonnet slot
+GLM_HAIKU_MODEL="glm-5"                 # override haiku slot
 GLM_PERMISSION_MODE="acceptEdits"       # or "bypassPermissions"
 GLM_MAX_PARALLEL=3                      # max concurrent agents (0=unlimited)
 ```
