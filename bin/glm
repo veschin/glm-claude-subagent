@@ -374,33 +374,45 @@ cmd_kill() {
 }
 
 cmd_update() {
+    local GREEN='\033[0;32m' YELLOW='\033[1;33m' RED='\033[0;31m' NC='\033[0m'
+    _info()  { echo -e "${GREEN}[+]${NC} $1"; }
+    _warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
+    _err()   { echo -e "${RED}[x]${NC} $1" >&2; }
+
     # Resolve the repo dir from this script's real path
     local script_path repo_dir
     script_path="$(readlink -f "$0")"
     repo_dir="$(cd "$(dirname "$script_path")/.." && pwd)"
 
     if [[ ! -d "$repo_dir/.git" ]]; then
-        echo "ERROR: Cannot find GoLeM repo at $repo_dir" >&2
-        echo "Try reinstalling: bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh)" >&2
+        _err "Cannot find GoLeM repo at $repo_dir"
+        _err "Reinstall: curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh | bash"
         exit 1
     fi
 
-    echo "Updating GoLeM from $(git -C "$repo_dir" rev-parse --short HEAD)..."
+    local old_rev
+    old_rev="$(git -C "$repo_dir" rev-parse --short HEAD)"
+    _info "Updating GoLeM from $old_rev..."
 
-    # Stash any local changes, pull, check for conflicts
+    # Pull latest, fast-forward only
     local pull_output
     if ! pull_output=$(git -C "$repo_dir" pull --ff-only 2>&1); then
-        echo "ERROR: Cannot fast-forward. Local repo has diverged." >&2
+        _err "Cannot fast-forward. Local repo has diverged."
         echo "$pull_output" >&2
         echo ""
-        echo "Reinstall to fix:"
-        echo "  bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh)"
+        _warn "Reinstall to fix:"
+        echo "  curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh | bash"
         exit 1
     fi
 
     local new_rev
     new_rev="$(git -C "$repo_dir" rev-parse --short HEAD)"
-    echo "Updated to $new_rev"
+
+    if [[ "$old_rev" == "$new_rev" ]]; then
+        _info "Already up to date ($new_rev)"
+    else
+        _info "Updated $old_rev -> $new_rev"
+    fi
 
     # Re-inject CLAUDE.md instructions
     local claude_md="${HOME}/.claude/CLAUDE.md"
@@ -420,10 +432,11 @@ cmd_update() {
         echo "" >> "$tmp"
         echo "$glm_section" >> "$tmp"
         mv "$tmp" "$claude_md"
-        echo "CLAUDE.md instructions updated."
+        _info "CLAUDE.md instructions updated"
     fi
 
-    echo "Done."
+    echo ""
+    _info "Done!"
 }
 
 cmd_session() {
