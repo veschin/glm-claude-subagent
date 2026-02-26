@@ -2,7 +2,9 @@
 set -euo pipefail
 
 SUBAGENT_DIR="${HOME}/.claude/subagents"
-ZAI_ENV="${HOME}/.config/zai/env"
+ZAI_ENV="${HOME}/.config/glm-claude-subagent/zai_api_key"
+# Fallback to legacy path
+[[ -f "$ZAI_ENV" ]] || ZAI_ENV="${HOME}/.config/zai/env"
 CLAUDE_BIN="$(command -v claude 2>/dev/null || echo "")"
 DEFAULT_TIMEOUT=3000
 
