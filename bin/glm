@@ -373,6 +373,59 @@ cmd_kill() {
     fi
 }
 
+cmd_update() {
+    # Resolve the repo dir from this script's real path
+    local script_path repo_dir
+    script_path="$(readlink -f "$0")"
+    repo_dir="$(cd "$(dirname "$script_path")/.." && pwd)"
+
+    if [[ ! -d "$repo_dir/.git" ]]; then
+        echo "ERROR: Cannot find GoLeM repo at $repo_dir" >&2
+        echo "Try reinstalling: bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh)" >&2
+        exit 1
+    fi
+
+    echo "Updating GoLeM from $(git -C "$repo_dir" rev-parse --short HEAD)..."
+
+    # Stash any local changes, pull, check for conflicts
+    local pull_output
+    if ! pull_output=$(git -C "$repo_dir" pull --ff-only 2>&1); then
+        echo "ERROR: Cannot fast-forward. Local repo has diverged." >&2
+        echo "$pull_output" >&2
+        echo ""
+        echo "Reinstall to fix:"
+        echo "  bash <(curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh)"
+        exit 1
+    fi
+
+    local new_rev
+    new_rev="$(git -C "$repo_dir" rev-parse --short HEAD)"
+    echo "Updated to $new_rev"
+
+    # Re-inject CLAUDE.md instructions
+    local claude_md="${HOME}/.claude/CLAUDE.md"
+    local glm_section
+    glm_section="$(cat "$repo_dir/claude/CLAUDE.md")"
+    local marker_start="<!-- GLM-SUBAGENT-START -->"
+    local marker_end="<!-- GLM-SUBAGENT-END -->"
+
+    if [[ -f "$claude_md" ]] && grep -q "$marker_start" "$claude_md"; then
+        local tmp
+        tmp="$(mktemp)"
+        awk -v start="$marker_start" -v end="$marker_end" '
+            $0 == start { skip=1; next }
+            $0 == end   { skip=0; next }
+            !skip { print }
+        ' "$claude_md" > "$tmp"
+        echo "" >> "$tmp"
+        echo "$glm_section" >> "$tmp"
+        mv "$tmp" "$claude_md"
+        echo "CLAUDE.md instructions updated."
+    fi
+
+    echo "Done."
+}
+
 cmd_session() {
     env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT \
         ANTHROPIC_AUTH_TOKEN="$ZAI_API_KEY" \
@@ -394,9 +447,10 @@ case "${1:-}" in
     clean)   shift; cmd_clean "$@" ;;
     kill)    shift; cmd_kill "$@" ;;
     session) shift; cmd_session "$@" ;;
+    update)  shift; cmd_update "$@" ;;
     *)
         cat <<'USAGE'
-Usage: glm {session|run|start|status|result|log|list|clean|kill} [options]
+Usage: glm {session|run|start|status|result|log|list|clean|kill|update} [options]
 
 Commands:
   session [claude flags]                         Interactive Claude Code on GLM-5
@@ -408,6 +462,7 @@ Commands:
   list                                           List all jobs
   clean   [--days N]                             Remove old jobs
   kill    JOB_ID                                 Terminate job
+  update                                         Self-update from GitHub
 
 Flags:
   --unsafe         Bypass all permission checks
