@@ -75,7 +75,7 @@ execute_claude() {
             --dangerously-skip-permissions \
             --no-session-persistence \
             --model sonnet \
-            --system-prompt "$SYSTEM_PROMPT" \
+            --append-system-prompt "$SYSTEM_PROMPT" \
             "$prompt" \
         > "$job_dir/stdout.txt" 2> "$job_dir/stderr.txt" \
     || exit_code=$?
