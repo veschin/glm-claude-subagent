@@ -2,6 +2,8 @@
 
 Delegate tasks from Claude Code (Opus) to parallel GLM-5 agents via Z.AI. Free subagents, unlimited parallelism.
 
+![Architecture](docs/architecture.svg)
+
 ## Prerequisites
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and in PATH

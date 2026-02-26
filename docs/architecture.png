@@ -1,0 +1,61 @@
+D2 rendering failed (exit code 1):
+STDERR: info: font d2-font-6551615429649722779.ttf loaded
+info: font d2-font-6551615429649722779.ttf loaded
+info: font d2-font-6551615429649722779.ttf loaded
+info: font d2-font-6551615429649722779.ttf loaded
+Error: Request to https://playwright.azureedge.net/builds/ffmpeg/1010/ffmpeg-linux.zip timed out after 30000ms
+    at ClientRequest.rejectOnTimeout (/root/.cache/ms-playwright-go/1.47.2/package/lib/utils/network.js:76:15)
+    at Object.onceWrapper (node:events:633:28)
+    at ClientRequest.emit (node:events:519:28)
+    at TLSSocket.emitRequestTimeout (node:_http_client:856:9)
+    at Object.onceWrapper (node:events:633:28)
+    at TLSSocket.emit (node:events:531:35)
+    at Socket._onTimeout (node:net:591:8)
+    at listOnTimeout (node:internal/timers:581:17)
+    at process.processTimers (node:internal/timers:519:7)
+Error: connect ENETUNREACH 2620:1ec:48:1::49:443 - Local (:::0)
+    at internalConnect (node:net:1094:16)
+    at defaultTriggerAsyncIdScope (node:internal/async_hooks:464:18)
+    at node:net:1324:9
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11) {
+  errno: -101,
+  code: 'ENETUNREACH',
+  syscall: 'connect',
+  address: '2620:1ec:48:1::49',
+  port: 443
+}
+Error: Request to https://playwright-verizon.azureedge.net/builds/ffmpeg/1010/ffmpeg-linux.zip timed out after 30000ms
+    at ClientRequest.rejectOnTimeout (/root/.cache/ms-playwright-go/1.47.2/package/lib/utils/network.js:76:15)
+    at Object.onceWrapper (node:events:633:28)
+    at ClientRequest.emit (node:events:519:28)
+    at TLSSocket.emitRequestTimeout (node:_http_client:856:9)
+    at Object.onceWrapper (node:events:633:28)
+    at TLSSocket.emit (node:events:531:35)
+    at Socket._onTimeout (node:net:591:8)
+    at listOnTimeout (node:internal/timers:581:17)
+    at process.processTimers (node:internal/timers:519:7)
+err: failed to install Playwright: could not install driver: could not install browsers: exit status 1
+
+STDOUT: Removing unused browser at /root/.cache/ms-playwright/chromium-1208
+Downloading Chromium 129.0.6668.29 (playwright build v1134) from https://playwright.azureedge.net/builds/chromium/1134/chromium-linux.zip
+|                                                                                |   0% of 164 MiB
+|■■■■■■■■                                                                        |  10% of 164 MiB
+|■■■■■■■■■■■■■■■■                                                                |  20% of 164 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 164 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 164 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 164 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 164 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 164 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 164 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 164 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 164 MiB
+Chromium 129.0.6668.29 (playwright build v1134) downloaded to /root/.cache/ms-playwright/chromium-1134
+Downloading FFMPEG playwright build v1010 from https://playwright.azureedge.net/builds/ffmpeg/1010/ffmpeg-linux.zip
+Downloading FFMPEG playwright build v1010 from https://playwright-akamai.azureedge.net/builds/ffmpeg/1010/ffmpeg-linux.zip
+Downloading FFMPEG playwright build v1010 from https://playwright-verizon.azureedge.net/builds/ffmpeg/1010/ffmpeg-linux.zip
+Failed to install browsers
+Error: Failed to download FFMPEG playwright build v1010, caused by
+Error: Download failure, code=1
+    at ChildProcess.<anonymous> (/root/.cache/ms-playwright-go/1.47.2/package/lib/server/registry/browserFetcher.js:91:16)
+    at ChildProcess.emit (node:events:519:28)
+    at ChildProcess._handle.onexit (node:internal/child_process:294:12)
