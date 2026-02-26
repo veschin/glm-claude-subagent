@@ -25,11 +25,12 @@
 - [Uninstall](#uninstall)
 - [Usage](#usage)
 - [Flags](#flags)
+- [Config](#config)
 - [How Claude Code uses it](#how-claude-code-uses-it)
 - [Response format](#response-format)
 - [Files](#files)
 - [Platforms](#platforms)
-- [Permissions & audit](#permissions--audit)
+- [Audit](#audit)
 - [Troubleshooting](#troubleshooting)
 
 ## Install
@@ -111,6 +112,29 @@ Claude Code uses three model slots internally — heavy tasks get opus, standard
 
 `session` also passes any extra flags directly to `claude` (e.g. `--resume`, `--verbose`).
 
+## Config
+
+`~/.config/GoLeM/glm.conf` — sourced as bash on every `glm` invocation.
+
+| Variable | Default | Description |
+|---|---|---|
+| `GLM_MODEL` | `glm-5` | Default model for all three slots. When set, opus, sonnet, and haiku all use this model unless overridden individually below. |
+| `GLM_OPUS_MODEL` | value of `GLM_MODEL` | Model for the **opus** slot. Claude Code routes heavy tasks here — planning, complex reasoning, architecture decisions. Override this to use a stronger or weaker model for those tasks. |
+| `GLM_SONNET_MODEL` | value of `GLM_MODEL` | Model for the **sonnet** slot. Standard workhorse — code generation, edits, refactoring. This is the slot `run`/`start` subagents use by default. |
+| `GLM_HAIKU_MODEL` | value of `GLM_MODEL` | Model for the **haiku** slot. Fast tasks — file search, glob, grep routing, quick classifications. Use a lighter model here to save quota and speed up. |
+| `GLM_PERMISSION_MODE` | `bypassPermissions` | Default permission mode for subagents. `bypassPermissions` — full autonomous access, no confirmation prompts. `acceptEdits` — auto-accept file edits only, asks for shell commands. Installer asks which mode to use on first run. |
+| `GLM_MAX_PARALLEL` | `3` | Maximum concurrent subagent processes. Z.AI rate-limits GLM-5 to 3 simultaneous requests, so the default matches. Excess agents queue and start automatically when a slot frees up. Set to `0` for unlimited. |
+
+**Priority:** inline flag (`-m`, `--opus` etc.) > per-slot config (`GLM_OPUS_MODEL`) > base config (`GLM_MODEL`) > default (`glm-5`).
+
+Example config:
+```bash
+GLM_MODEL="glm-5"
+GLM_HAIKU_MODEL="glm-4"          # lighter model for fast tasks
+GLM_PERMISSION_MODE="bypassPermissions"
+GLM_MAX_PARALLEL=3
+```
+
 ## How Claude Code uses it
 
 After install, every Claude Code session auto-delegates work to `glm` agents in parallel. Each agent is a **full autonomous Claude Code instance** — it can read/edit files, run shell commands, use MCP servers, invoke skills, and run tests. The only difference: LLM calls go to GLM-5 via Z.AI instead of Anthropic.
@@ -134,10 +158,10 @@ Codes: `OK` `ERR_NO_FILES` `ERR_PARSE` `ERR_ACCESS` `ERR_PERMISSION` `ERR_TIMEOU
 | Path | Purpose |
 |---|---|
 | `~/.local/bin/glm` | Symlink to cloned `bin/glm` |
-| `~/.claude/CLAUDE.md` | Delegation instructions (between markers) |
-| `~/.config/GoLeM/` | Config + API key |
-| `~/.config/GoLeM/glm.conf` | Permission mode setting |
-| `~/.claude/subagents/` | Job results (stdout, changelog, raw JSON) |
+| `~/.claude/CLAUDE.md` | Auto-delegation instructions (between markers) |
+| `~/.config/GoLeM/glm.conf` | Config — models, permissions, parallelism |
+| `~/.config/GoLeM/zai_api_key` | Z.AI API key (chmod 600) |
+| `~/.claude/subagents/job-*/` | Job results — stdout, changelog, raw JSON |
 
 ## Platforms
 
@@ -148,26 +172,7 @@ Codes: `OK` `ERR_NO_FILES` `ERR_PARSE` `ERR_ACCESS` `ERR_PERMISSION` `ERR_TIMEOU
 | WSL | Full |
 | Git Bash / PowerShell | Partial — needs bash for `glm` script |
 
-## Permissions & audit
-
-Default: **bypassPermissions** — agents have full autonomous access. Installer asks which mode to use.
-
-```bash
-glm run "fix the bug"                   # uses default from glm.conf
-glm run --mode acceptEdits "fix bug"    # restricted: edits only
-```
-
-Change defaults in `~/.config/GoLeM/glm.conf`:
-```bash
-GLM_MODEL="glm-5"                       # default for all three slots
-GLM_OPUS_MODEL="glm-5"                  # override opus slot
-GLM_SONNET_MODEL="glm-5"                # override sonnet slot
-GLM_HAIKU_MODEL="glm-5"                 # override haiku slot
-GLM_PERMISSION_MODE="acceptEdits"       # or "bypassPermissions"
-GLM_MAX_PARALLEL=3                      # max concurrent agents (0=unlimited)
-```
-
-Z.AI rate-limits GLM-5 to 3 simultaneous requests, so the default is `3`. Set to `0` to disable the limit.
+## Audit
 
 Every job logs all file changes to `changelog.txt`:
 ```bash
