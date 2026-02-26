@@ -7,7 +7,7 @@ ZAI_ENV="$CONFIG_DIR/zai_api_key"
 [[ -f "$ZAI_ENV" ]] || ZAI_ENV="${HOME}/.config/zai/env"
 CLAUDE_BIN="$(command -v claude 2>/dev/null || echo "")"
 DEFAULT_TIMEOUT=3000
-DEFAULT_PERMISSION_MODE="acceptEdits"
+DEFAULT_PERMISSION_MODE="bypassPermissions"
 
 # Load config
 GLM_CONF="$CONFIG_DIR/glm.conf"
@@ -23,7 +23,7 @@ fi
 
 SYSTEM_PROMPT='You are a subagent. Respond ONLY in this exact format:
 
-STATUS: OK | ERR_NO_FILES | ERR_PARSE | ERR_ACCESS | ERR_TIMEOUT | ERR_UNKNOWN
+STATUS: OK | ERR_NO_FILES | ERR_PARSE | ERR_ACCESS | ERR_PERMISSION | ERR_TIMEOUT | ERR_UNKNOWN
 FILES: [comma-separated list of files you read or modified, or "none"]
 ---
 [your concise answer here — no greetings, no filler, no markdown headers]
@@ -152,7 +152,12 @@ with open('$job_dir/changelog.txt', 'w') as f:
     elif [[ $exit_code -eq 124 ]]; then
         echo "timeout" > "$job_dir/status"
     else
-        echo "failed" > "$job_dir/status"
+        # Detect permission errors in stderr
+        if grep -qi 'permission\|not allowed\|denied\|unauthorized' "$job_dir/stderr.txt" 2>/dev/null; then
+            echo "permission_error" > "$job_dir/status"
+        else
+            echo "failed" > "$job_dir/status"
+        fi
         echo "$exit_code" > "$job_dir/exit_code.txt"
     fi
     date -Iseconds > "$job_dir/finished_at.txt"

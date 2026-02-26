@@ -125,15 +125,15 @@ GLM_CONF="$CONFIG_DIR/glm.conf"
 if [[ ! -f "$GLM_CONF" ]]; then
     echo ""
     echo "  Permission mode for subagents:"
-    echo "    1) acceptEdits   — auto-accept file edits (default, safe)"
-    echo "    2) bypassPermissions — skip all checks (use in sandboxes)"
+    echo "    1) bypassPermissions — full autonomous access (default)"
+    echo "    2) acceptEdits       — auto-accept edits only (restricted)"
     echo ""
     read -rp "  Choice [1]: " perm_choice
     perm_choice="${perm_choice:-1}"
 
     case "$perm_choice" in
-        2) perm_mode="bypassPermissions" ;;
-        *) perm_mode="acceptEdits" ;;
+        2) perm_mode="acceptEdits" ;;
+        *) perm_mode="bypassPermissions" ;;
     esac
 
     echo "GLM_PERMISSION_MODE=\"$perm_mode\"" > "$GLM_CONF"
