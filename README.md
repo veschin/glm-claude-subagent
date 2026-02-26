@@ -1,8 +1,8 @@
 # GLM — Claude Code Subagent powered by GLM-5
 
-Parallel GLM-5 agents for Claude Code via Z.AI. Free, unlimited.
+Spawn autonomous Claude Code agents powered by GLM-5 via Z.AI. Each agent is a full Claude Code instance — reads files, edits code, runs tests, uses MCP servers and skills. Just routed through GLM-5 instead of Anthropic. Free, unlimited, parallel.
 
-![Architecture](docs/architecture.svg?v=2)
+![Architecture](docs/architecture.svg?v=3)
 
 ## Table of Contents
 
@@ -46,9 +46,9 @@ glm kill JOB_ID                    # terminate
 
 ## How Claude Code uses it
 
-After install, every Claude Code session auto-delegates work to `glm` agents in parallel — each as a separate background process. Say **"delegate to glm"** and it fans out immediately.
+After install, every Claude Code session auto-delegates work to `glm` agents in parallel. Each agent is a **full autonomous Claude Code instance** — it can read/edit files, run shell commands, use MCP servers, invoke skills, and run tests. The only difference: LLM calls go to GLM-5 via Z.AI instead of Anthropic.
 
-Z.AI env vars are injected **only** into child processes. Your main session stays on Anthropic API.
+Say **"delegate to glm"** and it fans out immediately. Your main session (Opus) stays on Anthropic API — Z.AI env vars are injected only into child processes.
 
 ## Response format
 
