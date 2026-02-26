@@ -94,12 +94,15 @@ function Generate-JobId {
 
 function Count-RunningJobs {
     $count = 0
-    Get-ChildItem "$SubagentDir\job-*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+    $dirs = @()
+    $dirs += Get-ChildItem "$SubagentDir\*\job-*" -Directory -ErrorAction SilentlyContinue
+    $dirs += Get-ChildItem "$SubagentDir\job-*" -Directory -ErrorAction SilentlyContinue
+    $dirs | ForEach-Object {
         $statusFile = Join-Path $_.FullName "status"
         $pidFile    = Join-Path $_.FullName "pid.txt"
         $st = if (Test-Path $statusFile) { Get-Content $statusFile -Raw } else { "" }
         $st = $st.Trim()
-        if ($st -eq "running" -or $st -eq "pending") {
+        if ($st -eq "running") {
             if (Test-Path $pidFile) {
                 $pid = [int](Get-Content $pidFile -Raw).Trim()
                 if (Get-Process -Id $pid -ErrorAction SilentlyContinue) {
@@ -360,6 +363,7 @@ function Cmd-Run {
         -JobDir $jobDir -PermMode $p.PermMode -Opus $p.Opus -Sonnet $p.Sonnet -Haiku $p.Haiku
 
     Get-Content (Join-Path $jobDir "stdout.txt") -Raw
+    Remove-Item $jobDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 function Cmd-Start {
@@ -371,22 +375,22 @@ function Cmd-Start {
         exit 1
     }
 
-    Wait-ForSlot
-
     $jobId  = Generate-JobId
     $jobDir = Join-Path $SubagentDir $jobId
     New-Item -ItemType Directory -Path $jobDir -Force | Out-Null
-    Set-Content (Join-Path $jobDir "status") "pending"
+    Set-Content (Join-Path $jobDir "prompt.txt") $p.Prompt
+    Set-Content (Join-Path $jobDir "started_at.txt") (Get-Date -Format "o")
+    Set-Content (Join-Path $jobDir "status") "queued"
 
-    # Run in background via Start-Job
+    $jobId
+
+    # Run in background: wait for slot, then execute
     $job = Start-Job -ScriptBlock {
         param($ScriptPath, $ArgsToPass)
         & $ScriptPath run @ArgsToPass
     } -ArgumentList $PSCommandPath, $CmdArgs
 
     Set-Content (Join-Path $jobDir "pid.txt") $job.Id
-
-    $jobId
 }
 
 function Cmd-Status {
@@ -400,7 +404,7 @@ function Cmd-Status {
 
     $status = (Get-Content (Join-Path $jobDir "status") -Raw).Trim()
 
-    if ($status -eq "running" -or $status -eq "pending") {
+    if ($status -eq "running" -or $status -eq "queued") {
         $pidFile = Join-Path $jobDir "pid.txt"
         if (Test-Path $pidFile) {
             $pid = [int](Get-Content $pidFile -Raw).Trim()
@@ -425,7 +429,7 @@ function Cmd-Result {
 
     $status = (Get-Content (Join-Path $jobDir "status") -Raw).Trim()
 
-    if ($status -eq "running" -or $status -eq "pending") {
+    if ($status -eq "running" -or $status -eq "queued") {
         Write-Error "ERROR: Job $JobId is still $status"
         exit 1
     }
@@ -440,6 +444,7 @@ function Cmd-Result {
     }
 
     Get-Content (Join-Path $jobDir "stdout.txt") -Raw
+    Remove-Item $jobDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 function Cmd-Log {
@@ -462,7 +467,11 @@ function Cmd-Log {
 function Cmd-List {
     "{0,-40} {1,-10} {2,-25}" -f "JOB_ID", "STATUS", "STARTED"
     "{0,-40} {1,-10} {2,-25}" -f "------", "------", "-------"
-    Get-ChildItem "$SubagentDir\job-*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+    # Search project-scoped dirs and legacy flat structure
+    $dirs = @()
+    $dirs += Get-ChildItem "$SubagentDir\*\job-*" -Directory -ErrorAction SilentlyContinue
+    $dirs += Get-ChildItem "$SubagentDir\job-*" -Directory -ErrorAction SilentlyContinue
+    $dirs | ForEach-Object {
         $jobId  = $_.Name
         $status  = if (Test-Path (Join-Path $_.FullName "status"))       { (Get-Content (Join-Path $_.FullName "status") -Raw).Trim()       } else { "unknown" }
         $started = if (Test-Path (Join-Path $_.FullName "started_at.txt")) { (Get-Content (Join-Path $_.FullName "started_at.txt") -Raw).Trim() } else { "?" }
@@ -473,17 +482,35 @@ function Cmd-List {
 function Cmd-Clean {
     param([string[]]$CmdArgs)
 
-    $days = 3
+    $count = 0
+
     if ($CmdArgs.Count -ge 2 -and $CmdArgs[0] -eq "--days") {
+        # Time-based cleanup: remove jobs older than N days
         $days = [int]$CmdArgs[1]
+        $cutoff = (Get-Date).AddDays(-$days)
+        $dirs = @()
+        $dirs += Get-ChildItem "$SubagentDir\*\job-*" -Directory -ErrorAction SilentlyContinue
+        $dirs += Get-ChildItem "$SubagentDir\job-*" -Directory -ErrorAction SilentlyContinue
+        $dirs | Where-Object { $_.LastWriteTime -lt $cutoff } | ForEach-Object {
+            Remove-Item $_.FullName -Recurse -Force
+            $count++
+        }
+        "Cleaned $count jobs older than $days days"
+    } else {
+        # Status-based cleanup: remove all finished jobs (done/failed/timeout/killed)
+        $dirs = @()
+        $dirs += Get-ChildItem "$SubagentDir\*\job-*" -Directory -ErrorAction SilentlyContinue
+        $dirs += Get-ChildItem "$SubagentDir\job-*" -Directory -ErrorAction SilentlyContinue
+        $dirs | ForEach-Object {
+            $statusFile = Join-Path $_.FullName "status"
+            $st = if (Test-Path $statusFile) { (Get-Content $statusFile -Raw).Trim() } else { "unknown" }
+            if ($st -in @("done", "failed", "timeout", "killed")) {
+                Remove-Item $_.FullName -Recurse -Force
+                $count++
+            }
+        }
+        "Cleaned $count finished jobs"
     }
-
-    $cutoff = (Get-Date).AddDays(-$days)
-    Get-ChildItem "$SubagentDir\job-*" -Directory -ErrorAction SilentlyContinue |
-        Where-Object { $_.LastWriteTime -lt $cutoff } |
-        Remove-Item -Recurse -Force
-
-    "Cleaned jobs older than $days days"
 }
 
 function Cmd-Kill {

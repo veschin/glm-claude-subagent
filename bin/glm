@@ -115,7 +115,7 @@ count_running_jobs() {
         [[ -d "$job_dir" ]] || continue
         local status
         status=$(cat "$job_dir/status" 2>/dev/null || echo "")
-        if [[ "$status" == "running" || "$status" == "pending" ]]; then
+        if [[ "$status" == "running" ]]; then
             if [[ -f "$job_dir/pid.txt" ]]; then
                 local pid
                 pid=$(cat "$job_dir/pid.txt")
@@ -287,6 +287,7 @@ cmd_run() {
 
     execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode" "$opus" "$sonnet" "$haiku"
     cat "$job_dir/stdout.txt"
+    rm -rf "$job_dir"
 }
 
 cmd_start() {
@@ -311,19 +312,23 @@ cmd_start() {
         exit 1
     fi
 
-    wait_for_slot
-
     local project_id job_id
     project_id=$(resolve_project_id "$workdir")
     job_id=$(generate_job_id)
     local job_dir="$SUBAGENT_DIR/$project_id/$job_id"
     mkdir -p "$job_dir"
-    echo "pending" > "$job_dir/status"
-
-    execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode" "$opus" "$sonnet" "$haiku" &
-    echo "$!" > "$job_dir/pid.txt"
+    echo "$prompt" > "$job_dir/prompt.txt"
+    date -Iseconds > "$job_dir/started_at.txt"
+    echo "queued" > "$job_dir/status"
 
     echo "$job_id"
+
+    # Run in background: wait for slot, then execute
+    (
+        wait_for_slot
+        execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode" "$opus" "$sonnet" "$haiku"
+    ) &
+    echo "$!" > "$job_dir/pid.txt"
 }
 
 cmd_status() {
@@ -337,7 +342,7 @@ cmd_status() {
     local status
     status=$(cat "$job_dir/status")
 
-    if [[ "$status" == "running" || "$status" == "pending" ]] && [[ -f "$job_dir/pid.txt" ]]; then
+    if [[ "$status" == "running" || "$status" == "queued" ]] && [[ -f "$job_dir/pid.txt" ]]; then
         local pid
         pid=$(cat "$job_dir/pid.txt")
         if ! kill -0 "$pid" 2>/dev/null; then
@@ -360,7 +365,7 @@ cmd_result() {
     local status
     status=$(cat "$job_dir/status")
 
-    if [[ "$status" == "running" || "$status" == "pending" ]]; then
+    if [[ "$status" == "running" || "$status" == "queued" ]]; then
         echo "ERROR: Job $job_id is still $status" >&2
         exit 1
     fi
@@ -374,6 +379,7 @@ cmd_result() {
     fi
 
     cat "$job_dir/stdout.txt"
+    rm -rf "$job_dir"
 }
 
 cmd_log() {
@@ -394,7 +400,7 @@ cmd_log() {
 cmd_list() {
     printf "%-40s %-10s %-25s\n" "JOB_ID" "STATUS" "STARTED"
     printf "%-40s %-10s %-25s\n" "------" "------" "-------"
-    for job_dir in "$SUBAGENT_DIR"/job-*; do
+    for job_dir in "$SUBAGENT_DIR"/*/job-* "$SUBAGENT_DIR"/job-*; do
         [[ -d "$job_dir" ]] || continue
         local job_id status started
         job_id=$(basename "$job_dir")
@@ -405,12 +411,33 @@ cmd_list() {
 }
 
 cmd_clean() {
-    local days=3
+    local days="" count=0
     if [[ "${1:-}" == "--days" ]]; then
         days="${2:-3}"
     fi
-    find "$SUBAGENT_DIR" -maxdepth 1 -name "job-*" -type d -mtime "+$days" -exec rm -rf {} +
-    echo "Cleaned jobs older than $days days"
+
+    if [[ -n "$days" ]]; then
+        # Time-based cleanup: remove jobs older than N days
+        while IFS= read -r -d '' job_dir; do
+            rm -rf "$job_dir"
+            ((count++))
+        done < <(find "$SUBAGENT_DIR" -maxdepth 1 -name "job-*" -type d -mtime "+$days" -print0)
+        echo "Cleaned $count jobs older than $days days"
+    else
+        # Status-based cleanup: remove all finished jobs (done/failed/timeout/killed)
+        for job_dir in "$SUBAGENT_DIR"/*/job-* "$SUBAGENT_DIR"/job-*; do
+            [[ -d "$job_dir" ]] || continue
+            local status
+            status=$(cat "$job_dir/status" 2>/dev/null || echo "unknown")
+            case "$status" in
+                done|failed|timeout|killed)
+                    rm -rf "$job_dir"
+                    ((count++))
+                    ;;
+            esac
+        done
+        echo "Cleaned $count finished jobs"
+    fi
 }
 
 cmd_kill() {
