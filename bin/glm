@@ -420,7 +420,7 @@ cmd_clean() {
         # Time-based cleanup: remove jobs older than N days
         while IFS= read -r -d '' job_dir; do
             rm -rf "$job_dir"
-            ((count++))
+            count=$((count + 1))
         done < <(find "$SUBAGENT_DIR" -maxdepth 1 -name "job-*" -type d -mtime "+$days" -print0)
         echo "Cleaned $count jobs older than $days days"
     else
@@ -432,7 +432,7 @@ cmd_clean() {
             case "$status" in
                 done|failed|timeout|killed)
                     rm -rf "$job_dir"
-                    ((count++))
+                    count=$((count + 1))
                     ;;
             esac
         done
