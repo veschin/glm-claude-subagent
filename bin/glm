@@ -501,6 +501,9 @@ cmd_update() {
         _info "Already up to date ($new_rev)"
     else
         _info "Updated $old_rev -> $new_rev"
+        git -C "$repo_dir" log --oneline "$old_rev..$new_rev" | while IFS= read -r line; do
+            echo "  - $line"
+        done
     fi
 
     # Re-inject CLAUDE.md instructions

@@ -572,6 +572,9 @@ function Cmd-Update {
         _info "Already up to date ($newRev)"
     } else {
         _info "Updated $oldRev -> $newRev"
+        git -C $repoDir log --oneline "$oldRev..$newRev" | ForEach-Object {
+            Write-Host "  - $_"
+        }
     }
 
     # Re-inject CLAUDE.md instructions
