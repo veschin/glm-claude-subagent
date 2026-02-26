@@ -71,8 +71,10 @@ irm https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.ps1 | iex
 
 ```bash
 glm session                        # interactive Claude Code on GLM-5
+glm session --model glm-4           # use a different model
 glm run "your prompt"              # sync, prints result
 glm run -d ~/project "prompt"      # with working directory
+glm run -m glm-4 "prompt"         # run with specific model
 glm run --unsafe "prompt"          # bypass all permission checks
 glm start "prompt"                 # async, returns job ID
 glm status JOB_ID                  # pending/running/done/failed/permission_error
@@ -132,6 +134,7 @@ glm run --mode acceptEdits "fix bug"    # restricted: edits only
 
 Change defaults in `~/.config/GoLeM/glm.conf`:
 ```bash
+GLM_MODEL="glm-5"                       # default model for run/start
 GLM_PERMISSION_MODE="acceptEdits"       # or "bypassPermissions"
 GLM_MAX_PARALLEL=3                      # max concurrent agents (0=unlimited)
 ```
