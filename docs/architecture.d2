@@ -1,56 +1,23 @@
-direction: right
+sequence: {
+  shape: sequence_diagram
 
-dev_user: "Developer" {class: user}
-
-g_session: "Claude Code\nSession" {
+  dev_user: Developer
   j_opus: "Claude Code\nOpus 4.6"
-  j_opus.tooltip: "Main orchestrator\nAnthropic API"
-}
-
-g_glm: "GLM Delegation" {
   py_glm: "glm\nscript"
-  py_glm.tooltip: "Injects Z.AI env vars\ninto child processes"
-
-  g_agents: "Parallel Agents" {
-    ex_agent1: "GLM-5\nAgent 1"
-    ex_agent2: "GLM-5\nAgent 2"
-    ex_agent3: "GLM-5\nAgent N"
-    ex_agent3.style.multiple: true
-  }
-}
-
-g_infra: "Infrastructure" {
   ex_zai: "Z.AI\nAPI"
-  ex_zai.tooltip: "api.z.ai/api/anthropic"
 
-  db_jobs: "Job\nResults"
-  db_jobs.tooltip: "~/.claude/subagents/"
+  # User gives task
+  dev_user -> j_opus: task
 
-  db_creds: "API Key"
-  db_creds.tooltip: "~/.config/zai/env"
-  db_creds.shape: stored_data
+  # Delegation
+  delegate: {
+    label: "loop [parallel agents]"
+    j_opus -> py_glm: "delegate via\nBash tool"
+    py_glm -> ex_zai: "claude -p\n(GLM-5)"
+    ex_zai -> py_glm: result
+    py_glm -> j_opus: stdout
+  }
+
+  # Synthesize
+  j_opus -> dev_user: "synthesized\nresult"
 }
-
-mf_claude_md: "CLAUDE.md\nInstructions" {
-  shape: document
-}
-
-dev_user -> g_session.j_opus: task
-g_session.j_opus -> g_glm.py_glm: "delegate via\nBash tool"
-mf_claude_md -> g_session.j_opus: "delegation\nrules" {style.stroke-dash: 3}
-
-g_glm.py_glm -> g_glm.g_agents.ex_agent1: "claude -p" {style.animated: true}
-g_glm.py_glm -> g_glm.g_agents.ex_agent2: "claude -p" {style.animated: true}
-g_glm.py_glm -> g_glm.g_agents.ex_agent3: "claude -p" {style.animated: true}
-
-g_glm.g_agents.ex_agent1 -> g_infra.ex_zai: GLM-5
-g_glm.g_agents.ex_agent2 -> g_infra.ex_zai: GLM-5
-g_glm.g_agents.ex_agent3 -> g_infra.ex_zai: GLM-5
-
-g_glm.g_agents.ex_agent1 -> g_infra.db_jobs: stdout
-g_glm.g_agents.ex_agent2 -> g_infra.db_jobs: stdout
-g_glm.g_agents.ex_agent3 -> g_infra.db_jobs: stdout
-
-g_glm.py_glm -> g_infra.db_creds: "source\nkey" {style.stroke-dash: 3}
-
-g_infra.db_jobs -> g_session.j_opus: "results" {style.stroke-dash: 3}
