@@ -102,10 +102,33 @@ function Resolve-ProjectId {
     if (-not $root) { $root = $absDir }
 
     $name = Split-Path $root -Leaf
-    # Simple hash: sum of char codes (cksum equivalent)
-    $hashVal = 0
-    foreach ($c in $root.ToCharArray()) { $hashVal = ($hashVal + [int]$c) * 31 }
-    $hashVal = [Math]::Abs($hashVal) % 4294967296
+    # Match bash cksum output for cross-platform compatibility
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($root)
+    $crc = 0xFFFFFFFF
+    foreach ($b in $bytes) {
+        $crc = $crc -bxor $b
+        for ($bit = 0; $bit -lt 8; $bit++) {
+            if ($crc -band 1) {
+                $crc = ($crc -shr 1) -bxor 0xEDB88320
+            } else {
+                $crc = $crc -shr 1
+            }
+        }
+    }
+    # cksum also includes the length — process length bytes
+    $len = $bytes.Length
+    while ($len -gt 0) {
+        $crc = $crc -bxor ($len -band 0xFF)
+        for ($bit = 0; $bit -lt 8; $bit++) {
+            if ($crc -band 1) {
+                $crc = ($crc -shr 1) -bxor 0xEDB88320
+            } else {
+                $crc = $crc -shr 1
+            }
+        }
+        $len = [Math]::Floor($len / 256)
+    }
+    $hashVal = $crc -bxor 0xFFFFFFFF
     "$name-$hashVal"
 }
 
