@@ -448,7 +448,7 @@ cmd_clean() {
         while IFS= read -r -d '' job_dir; do
             rm -rf "$job_dir"
             count=$((count + 1))
-        done < <(find "$SUBAGENT_DIR" -maxdepth 1 -name "job-*" -type d -mtime "+$days" -print0)
+        done < <(find "$SUBAGENT_DIR" -maxdepth 2 -name "job-*" -type d -mtime "+$days" -print0)
         echo "Cleaned $count jobs older than $days days"
     else
         # Status-based cleanup: remove all finished jobs (done/failed/timeout/killed)
@@ -469,7 +469,11 @@ cmd_clean() {
 
 cmd_kill() {
     local job_id="$1"
-    local job_dir="$SUBAGENT_DIR/$job_id"
+    local job_dir
+    if ! job_dir=$(find_job_dir "$job_id"); then
+        echo "ERROR: Job $job_id not found" >&2
+        exit 1
+    fi
 
     if [[ ! -f "$job_dir/pid.txt" ]]; then
         echo "ERROR: No PID file for $job_id" >&2
