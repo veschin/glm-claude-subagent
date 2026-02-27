@@ -22,5 +22,11 @@ files:
   - job_failed/stderr.txt
   - job_failed/exit_code.txt
   - job_corrupted/prompt.txt
+  - job_timeout/status
+  - job_timeout/stderr.txt
+  - job_killed/status
+  - job_killed/stderr.txt
+  - job_permission_error/status
+  - job_permission_error/stderr.txt
   - project_id_git.json
   - project_id_nongit.json

@@ -5,4 +5,8 @@ files:
   - claude_md_no_markers.md
   - config_json.json
   - install_prompts.json
+  - update_scenario.json
+  - update_diverged.json
+  - uninstall_scenario.json
+  - claude_md_not_exists.json
 status: complete

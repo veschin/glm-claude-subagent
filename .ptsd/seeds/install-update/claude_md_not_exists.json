@@ -1,0 +1,5 @@
+{
+  "description": "CLAUDE.md does not exist — create with only GLM section",
+  "initial_state": "file_not_exists",
+  "expected_action": "create_with_glm_section_only"
+}

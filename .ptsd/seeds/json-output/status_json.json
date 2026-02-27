@@ -1,9 +1,10 @@
 {
-  "id": "job-20260227-143205-a8f3b1c2",
-  "status": "running",
-  "project": "/home/veschin/work/my-app",
-  "prompt": "Analyze src/auth/ for security issues",
-  "pid": 48201,
-  "created_at": "2026-02-27T14:32:05+03:00",
-  "elapsed_seconds": 127
+  "description": "glm status --json JOB_ID output",
+  "input_job_id": "job-20260227-142800-e5f6a7b8",
+  "expected_output": {
+    "id": "job-20260227-142800-e5f6a7b8",
+    "status": "running",
+    "pid": 48201,
+    "started_at": "2026-02-27T14:28:00+03:00"
+  }
 }

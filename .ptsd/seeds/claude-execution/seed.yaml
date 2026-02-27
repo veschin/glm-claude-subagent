@@ -6,9 +6,12 @@ files:
   - raw_output_no_changes.json
   - raw_output_bash_delete.json
   - raw_output_notebook.json
+  - raw_output_bash_fs.json
   - expected_changelog_happy.txt
   - expected_changelog_no_changes.txt
   - expected_changelog_bash_delete.txt
+  - expected_changelog_notebook.txt
+  - expected_changelog_bash_fs.txt
   - expected_env.json
   - stderr_permission_denied.txt
   - stderr_not_allowed.txt

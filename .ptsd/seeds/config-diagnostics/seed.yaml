@@ -5,3 +5,5 @@ files:
   - config_show.json
   - config_set_valid.json
   - config_set_invalid_key.json
+  - config_set_permission.json
+  - config_show_defaults.json

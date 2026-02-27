@@ -2,5 +2,6 @@
   "git_root": "/home/veschin/work/my-express-app",
   "basename": "my-express-app",
   "cksum_input": "/home/veschin/work/my-express-app",
-  "expected_project_id": "my-express-app-2847163905"
+  "expected_project_id": "my-express-app-{cksum}",
+  "note": "cksum is CRC32 IEEE of absolute git root path, computed at test time"
 }

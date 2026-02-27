@@ -1,13 +1,19 @@
-default_provider = "zai"
-
 [providers.zai]
 base_url = "https://api.z.ai/api/anthropic"
-api_key_file = "/home/veschin/.config/GoLeM/api_key.txt"
-model = "glm-4.7"
-opus_model = "glm-4.7"
+api_key_file = "~/.config/GoLeM/zai_api_key"
+timeout_ms = "3000000"
+
+[providers.zai.models]
+opus = "glm-4.7"
+sonnet = "glm-4.7"
+haiku = "glm-4.7"
 
 [providers.custom]
-base_url = "https://api.custom-llm.example.com/v1"
-api_key_file = "/home/veschin/.config/GoLeM/custom_api_key.txt"
-model = "custom-large-v2"
-opus_model = "custom-large-v2"
+base_url = "https://my-proxy.example.com"
+api_key_file = "~/.config/GoLeM/custom_api_key"
+timeout_ms = "5000000"
+
+[providers.custom.models]
+opus = "claude-opus-4-6"
+sonnet = "claude-sonnet-4-6"
+haiku = "claude-haiku-4-5-20251001"

@@ -1,13 +1,13 @@
 {
-  "id": "job-20260227-133000-b1c2d3e4",
-  "status": "failed",
-  "project": "/home/veschin/work/api-server",
-  "prompt": "Refactor database connection pooling in src/db/pool.go",
-  "created_at": "2026-02-27T13:30:00+03:00",
-  "finished_at": "2026-02-27T13:31:12+03:00",
-  "duration_seconds": 72,
-  "exit_code": 1,
-  "stdout": "",
-  "stderr": "[GoLeM] Job started: job-20260227-133000-b1c2d3e4\n[GoLeM] Working directory: /home/veschin/work/api-server\nError: permission denied — cannot write to src/db/pool.go\n[GoLeM] Job failed with exit code 1",
-  "changelog": []
+  "description": "glm result --json JOB_ID output (failed job)",
+  "input_job_id": "job-20260227-141500-c3d4e5f6",
+  "expected_output": {
+    "id": "job-20260227-141500-c3d4e5f6",
+    "status": "failed",
+    "stdout": "",
+    "stderr": "Error: permission denied — cannot write to src/db/pool.go\n[GoLeM] Job failed with exit code 1",
+    "changelog": "(no file changes)",
+    "duration_seconds": 72,
+    "exit_code": 1
+  }
 }

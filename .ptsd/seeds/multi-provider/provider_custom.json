@@ -1,10 +1,12 @@
 {
+  "description": "Select custom provider via --provider flag",
   "provider": "custom",
   "expected_env": {
-    "ANTHROPIC_BASE_URL": "https://api.custom-llm.example.com/v1",
-    "ANTHROPIC_API_KEY_FILE": "/home/veschin/.config/GoLeM/custom_api_key.txt",
-    "ANTHROPIC_MODEL": "custom-large-v2",
-    "CLAUDE_CODE_USE_BEDROCK": "",
-    "CLAUDE_CODE_USE_VERTEX": ""
+    "ANTHROPIC_AUTH_TOKEN": "sk-custom-z9y8x7w6v5u4t3s2r1q0",
+    "ANTHROPIC_BASE_URL": "https://my-proxy.example.com",
+    "API_TIMEOUT_MS": "5000000",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-6",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001"
   }
 }

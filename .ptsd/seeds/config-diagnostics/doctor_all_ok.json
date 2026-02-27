@@ -8,7 +8,7 @@
     {
       "name": "api_key",
       "status": "ok",
-      "detail": "API key configured via /home/veschin/.config/GoLeM/api_key.txt"
+      "detail": "API key configured via /home/veschin/.config/GoLeM/zai_api_key"
     },
     {
       "name": "zai_reachable",
@@ -18,12 +18,17 @@
     {
       "name": "models",
       "status": "ok",
-      "detail": "model=glm-4.7, opus_model=glm-4.7"
+      "detail": "opus=glm-4.7, sonnet=glm-4.7, haiku=glm-4.7"
     },
     {
       "name": "slots",
       "status": "ok",
       "detail": "2/3 slots in use"
+    },
+    {
+      "name": "platform",
+      "status": "ok",
+      "detail": "linux/amd64"
     }
   ],
   "overall": "ok"

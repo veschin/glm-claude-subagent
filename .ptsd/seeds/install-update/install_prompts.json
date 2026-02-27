@@ -14,9 +14,9 @@
       "type": "choice",
       "options": ["bypassPermissions", "acceptEdits"],
       "default": "bypassPermissions",
-      "config_file": "glm.conf",
-      "format": "GLM_PERMISSION_MODE=\"<value>\"",
-      "skip_if": "glm.conf already exists"
+      "config_file": "~/.config/GoLeM/glm.toml",
+      "format": "permission_mode = \"<value>\"",
+      "skip_if": "glm.toml already exists"
     }
   ],
   "conditional_prompts": [

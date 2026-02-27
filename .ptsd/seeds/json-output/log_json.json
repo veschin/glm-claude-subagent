@@ -1,18 +1,12 @@
 {
-  "id": "job-20260227-140000-d4e5f6a7",
-  "status": "done",
-  "changelog": [
-    {
-      "path": "src/utils/__tests__/validate.test.ts",
-      "action": "created",
-      "lines_added": 142,
-      "lines_removed": 0
-    },
-    {
-      "path": "src/utils/validate.ts",
-      "action": "modified",
-      "lines_added": 3,
-      "lines_removed": 1
-    }
-  ]
+  "description": "glm log --json JOB_ID output",
+  "input_job_id": "job-20260227-143205-a8f3b1c2",
+  "expected_output": {
+    "id": "job-20260227-143205-a8f3b1c2",
+    "changes": [
+      "EDIT src/utils/validate.ts: 142 chars",
+      "WRITE src/utils/validate.test.ts",
+      "FS: mkdir -p src/utils/__tests__"
+    ]
+  }
 }
