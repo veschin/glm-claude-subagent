@@ -16,10 +16,12 @@ for f in "$GLM_ROOT/lib/commands/"*.sh; do source "$f"; done
 
 # Initialize
 load_config
-load_credentials
-check_dependencies
-init_counter
-reconcile_counter
+if [[ "${1:-}" != "_install" && "${1:-}" != "_uninstall" ]]; then
+    load_credentials
+    check_dependencies
+    init_counter
+    reconcile_counter
+fi
 
 usage() {
     cat <<'USAGE'
