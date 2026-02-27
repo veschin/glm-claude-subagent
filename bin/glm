@@ -339,14 +339,14 @@ cmd_start() {
     date -Iseconds > "$job_dir/started_at.txt"
     echo "queued" > "$job_dir/status"
 
-    echo "$job_id"
-
     # Run in background: wait for slot, then execute
     (
         wait_for_slot "$job_dir"
         execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode" "$opus" "$sonnet" "$haiku"
     ) &
     echo "$!" > "$job_dir/pid.txt"
+
+    echo "$job_id"
 }
 
 cmd_status() {
@@ -425,10 +425,15 @@ cmd_list() {
         status=$(cat "$job_dir/status" 2>/dev/null || echo "unknown")
         started=$(cat "$job_dir/started_at.txt" 2>/dev/null || echo "?")
         # Fix stale running/queued jobs whose process is dead
-        if [[ "$status" == "running" || "$status" == "queued" ]] && [[ -f "$job_dir/pid.txt" ]]; then
-            local pid
-            pid=$(cat "$job_dir/pid.txt")
-            if ! kill -0 "$pid" 2>/dev/null; then
+        if [[ "$status" == "running" || "$status" == "queued" ]]; then
+            if [[ -f "$job_dir/pid.txt" ]]; then
+                local pid
+                pid=$(cat "$job_dir/pid.txt")
+                if ! kill -0 "$pid" 2>/dev/null; then
+                    status="failed"
+                    echo "failed" > "$job_dir/status"
+                fi
+            else
                 status="failed"
                 echo "failed" > "$job_dir/status"
             fi
