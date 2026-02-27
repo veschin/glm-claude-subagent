@@ -1,91 +1,91 @@
 features:
   agent-chaining:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   claude-execution:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   concurrency-control:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   config-diagnostics:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   config-management:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   core-commands:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   cost-tracking:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   error-taxonomy:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   install-update:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   job-filtering:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   job-lifecycle:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   job-management:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   json-output:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   multi-provider:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   output-streaming:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   session-command:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   stale-recovery:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0
   structured-logging:
-    stage: seed
+    stage: bdd
     tests: absent
     review: passed
     issues: 0

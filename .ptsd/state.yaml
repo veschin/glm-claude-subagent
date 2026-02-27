@@ -3,6 +3,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.655172055+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.905357627+03:00"
@@ -10,6 +13,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.64565688+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.901201838+03:00"
@@ -17,6 +23,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.644836549+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:07:40.970751173+03:00"
@@ -24,6 +33,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.653573844+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.904509743+03:00"
@@ -31,6 +43,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.643226415+03:00"
       seed:
         score: 8
         at: "2026-02-27T21:03:04.205557366+03:00"
@@ -38,6 +53,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.646448026+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:07:40.971640646+03:00"
@@ -45,6 +63,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.656676858+03:00"
       seed:
         score: 8
         at: "2026-02-27T21:07:40.976105488+03:00"
@@ -52,6 +73,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.651192012+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:07:40.973946353+03:00"
@@ -59,6 +83,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.648793999+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.902922874+03:00"
@@ -66,6 +93,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.652765736+03:00"
       seed:
         score: 8
         at: "2026-02-27T21:07:40.97469171+03:00"
@@ -73,6 +103,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.644078738+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.900325729+03:00"
@@ -80,6 +113,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.647218612+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:07:40.972495093+03:00"
@@ -87,6 +123,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.651972908+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.903726042+03:00"
@@ -94,6 +133,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.655928574+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.906097675+03:00"
@@ -101,6 +143,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.654381611+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:07:40.975398053+03:00"
@@ -108,6 +153,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.6480061+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.902068998+03:00"
@@ -115,6 +163,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.649585355+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:07:40.973280177+03:00"
@@ -122,6 +173,9 @@ features:
     stage: 
     hashes:
     scores:
+      bdd:
+        score: 8
+        at: "2026-02-27T21:20:59.650393272+03:00"
       seed:
         score: 7
         at: "2026-02-27T21:13:33.906813065+03:00"
