@@ -7,7 +7,7 @@ $ConfigFile = "$ConfigDir\config.json"
 $BinFile    = "$env:USERPROFILE\.local\bin\glm.ps1"
 $ClaudeMd   = "$env:USERPROFILE\.claude\CLAUDE.md"
 $Subagents  = "$env:USERPROFILE\.claude\subagents"
-$CloneDir   = "$env:TEMP\GoLeM"
+$CloneDir   = "$env:LOCALAPPDATA\GoLeM"
 
 $MarkerStart = "<!-- GLM-SUBAGENT-START -->"
 $MarkerEnd   = "<!-- GLM-SUBAGENT-END -->"

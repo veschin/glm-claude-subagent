@@ -3,7 +3,7 @@
 $ErrorActionPreference = "Stop"
 
 $RepoUrl    = "https://github.com/veschin/GoLeM.git"
-$CloneDir   = "$env:TEMP\GoLeM"
+$CloneDir   = "$env:LOCALAPPDATA\GoLeM"
 $ConfigDir  = "$env:USERPROFILE\.config\GoLeM"
 $BinDir     = "$env:USERPROFILE\.local\bin"
 $BinFile    = "$BinDir\glm.ps1"

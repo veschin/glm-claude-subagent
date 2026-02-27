@@ -32,7 +32,7 @@ echo ""
 TARGET_BIN="${HOME}/.local/bin/glm"
 TARGET_CLAUDE_MD="${HOME}/.claude/CLAUDE.md"
 TARGET_SUBAGENTS="${HOME}/.claude/subagents"
-CLONE_DIR="/tmp/GoLeM"
+CLONE_DIR="${HOME}/.local/share/GoLeM"
 
 if [[ -f "$CONFIG_FILE" ]]; then
     CLONE_DIR="$(grep '"clone_dir"' "$CONFIG_FILE" | cut -d'"' -f4 2>/dev/null || echo "$CLONE_DIR")"

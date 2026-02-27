@@ -115,7 +115,7 @@ count_running_jobs() {
         [[ -d "$job_dir" ]] || continue
         local status
         status=$(cat "$job_dir/status" 2>/dev/null || echo "")
-        if [[ "$status" == "running" ]]; then
+        if [[ "$status" == "running" || "$status" == "queued" ]]; then
             if [[ -f "$job_dir/pid.txt" ]]; then
                 local pid
                 pid=$(cat "$job_dir/pid.txt")
@@ -128,13 +128,21 @@ count_running_jobs() {
     echo "$count"
 }
 
+# Atomically claim a slot using mkdir lock (portable across Linux/macOS)
 wait_for_slot() {
+    local job_dir="$1"
     [[ "$MAX_PARALLEL" -le 0 ]] && return 0  # 0 = unlimited
+    local lockdir="$SUBAGENT_DIR/.slot_lock"
     while true; do
-        local running
-        running=$(count_running_jobs)
-        if [[ "$running" -lt "$MAX_PARALLEL" ]]; then
-            return 0
+        if mkdir "$lockdir" 2>/dev/null; then
+            local running
+            running=$(count_running_jobs)
+            if [[ "$running" -lt "$MAX_PARALLEL" ]]; then
+                echo "running" > "$job_dir/status"
+                rmdir "$lockdir"
+                return 0
+            fi
+            rmdir "$lockdir"
         fi
         sleep 2
     done
@@ -277,13 +285,15 @@ cmd_run() {
         exit 1
     fi
 
-    wait_for_slot
-
     local project_id job_id
     project_id=$(resolve_project_id "$workdir")
     job_id=$(generate_job_id)
     local job_dir="$SUBAGENT_DIR/$project_id/$job_id"
     mkdir -p "$job_dir"
+    echo "queued" > "$job_dir/status"
+    echo "$$" > "$job_dir/pid.txt"
+
+    wait_for_slot "$job_dir"
 
     execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode" "$opus" "$sonnet" "$haiku"
     cat "$job_dir/stdout.txt"
@@ -325,7 +335,7 @@ cmd_start() {
 
     # Run in background: wait for slot, then execute
     (
-        wait_for_slot
+        wait_for_slot "$job_dir"
         execute_claude "$prompt" "$workdir" "$timeout" "$job_dir" "$perm_mode" "$opus" "$sonnet" "$haiku"
     ) &
     echo "$!" > "$job_dir/pid.txt"
@@ -406,6 +416,15 @@ cmd_list() {
         job_id=$(basename "$job_dir")
         status=$(cat "$job_dir/status" 2>/dev/null || echo "unknown")
         started=$(cat "$job_dir/started_at.txt" 2>/dev/null || echo "?")
+        # Fix stale running/queued jobs whose process is dead
+        if [[ "$status" == "running" || "$status" == "queued" ]] && [[ -f "$job_dir/pid.txt" ]]; then
+            local pid
+            pid=$(cat "$job_dir/pid.txt")
+            if ! kill -0 "$pid" 2>/dev/null; then
+                status="failed"
+                echo "failed" > "$job_dir/status"
+            fi
+        fi
         printf "%-40s %-10s %-25s\n" "$job_id" "$status" "$started"
     done
 }
