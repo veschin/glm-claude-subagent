@@ -1,96 +1,79 @@
-# CLAUDE.md
+<!-- ---ptsd--- -->
+# Claude Agent Instructions
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Authority Hierarchy (ENFORCED BY HOOKS)
 
-## Project Overview
+PTSD (iron law) > User (context provider) > Assistant (executor)
 
-GoLeM is a CLI tool (`glm`) that spawns autonomous Claude Code subagents powered by GLM-5 via Z.AI. The main Claude Code instance (Opus on Anthropic API) delegates parallelizable work to free GLM-5 agents running through Z.AI's API proxy. Bash on Linux/macOS, PowerShell on Windows.
+- PTSD decides what CAN and CANNOT be done. Pipeline, gates, validation — non-negotiable.
+  Hooks enforce this automatically — writes that violate pipeline are BLOCKED.
+- User provides context and requirements. User also follows ptsd rules.
+- Assistant executes within ptsd constraints. Writes code, docs, tests on behalf of user.
 
-## Architecture
+## Session Start Protocol
 
-```
-Developer -> Claude Code (Opus) -> glm CLI -> Claude Code (GLM-5 via Z.AI)
-                                                  |
-                                          reads/edits files, runs commands
-```
+EVERY session, BEFORE any work:
+1. Run: ptsd context --agent — see full pipeline state
+2. Run: ptsd task next --agent — get next task
+3. Follow output exactly.
 
-**Core flow:**
-1. `bin/glm` entry point sources `lib/` modules, initializes config/credentials/counter
-2. Dispatches to `cmd_*` function in `lib/commands/*.sh`
-3. `wait_for_slot()` uses flock-based O(1) counter (mkdir fallback for macOS)
-4. `execute_claude()` invokes `claude -p` with env overrides pointing to Z.AI
-5. `lib/changelog.py` (standalone Python) parses JSON output into stdout.txt + changelog.txt
-6. Per-job artifacts stored in `~/.claude/subagents/<project-id>/job-*/`
+## Commands (always use --agent flag)
 
-**Key design decisions:**
-- Modular `lib/` architecture: log, config, flags, prompt, jobs, claude, commands
-- Agents run with `--model sonnet` but env vars (`ANTHROPIC_DEFAULT_*_MODEL`) remap all three slots to GLM-5 (or configured model)
-- Per-slot model control: opus/sonnet/haiku slots can be independently configured
-- `env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT` prevents subagent detection/nesting issues
-- System prompt enforces structured response format: `STATUS: ... / FILES: ... / ---`
-- Jobs are project-scoped via `resolve_project_id()` (basename + cksum hash of git root), with fallback search across all projects and legacy flat `job-*` dirs
-- `run` auto-deletes job dir after printing; `result` auto-deletes after reading — only `start` jobs persist until explicitly cleaned
-- Unified flag parser in `lib/flags.sh` — no duplication across commands
-- flock-based slot counter with automatic reconciliation at startup
+- ptsd context --agent              — full pipeline state (auto-injected by hooks)
+- ptsd status --agent               — project overview
+- ptsd task next --agent            — next task to work on
+- ptsd task update <id> --status WIP — mark task in progress
+- ptsd validate --agent             — check pipeline before commit
+- ptsd feature list --agent         — list all features
+- ptsd seed init <id> --agent       — initialize seed directory
+- ptsd gate-check --file <path> --agent — check if file write is allowed
 
-## File Layout
+## Skills
 
-| File | Purpose |
-|------|---------|
-| `bin/glm` | Entry point (~60 lines): resolve GLM_ROOT, source lib/, dispatch |
-| `bin/glm.ps1` | PowerShell port with Mutex-based slots, real OS PID tracking |
-| `lib/log.sh` | Logging: info/warn/err/die/debug, color support, exit codes |
-| `lib/config.sh` | Constants, load_config, load_credentials, check_dependencies |
-| `lib/flags.sh` | Unified parse_flags() for execution/session modes |
-| `lib/prompt.sh` | SYSTEM_PROMPT constant |
-| `lib/jobs.sh` | Job lifecycle: create, status, find, project_id, slot management |
-| `lib/claude.sh` | build_claude_env, build_claude_flags, execute_claude |
-| `lib/changelog.py` | Standalone Python: JSON -> stdout.txt + changelog.txt |
-| `lib/commands/run.sh` | cmd_run: sync execution |
-| `lib/commands/start.sh` | cmd_start: async execution with PID-before-echo fix |
-| `lib/commands/status.sh` | cmd_status: check job status with PID liveness |
-| `lib/commands/result.sh` | cmd_result: get output and auto-delete |
-| `lib/commands/logcmd.sh` | cmd_log: show changelog |
-| `lib/commands/list.sh` | cmd_list: table of all jobs with stale detection |
-| `lib/commands/clean.sh` | cmd_clean: time-based or status-based cleanup |
-| `lib/commands/kill.sh` | cmd_kill: SIGTERM + SIGKILL with find_job_dir |
-| `lib/commands/update.sh` | cmd_update: git pull + CLAUDE.md re-injection |
-| `lib/commands/session.sh` | cmd_session: interactive Claude Code |
-| `lib/commands/self_install.sh` | cmd_self_install/cmd_self_uninstall |
-| `claude/CLAUDE.md` | Instructions injected into `~/.claude/CLAUDE.md` on install |
-| `install.sh` | Bash installer: clone + delegate to `glm _install` |
-| `uninstall.sh` | Bash uninstaller: try `glm _uninstall`, fallback to manual |
-| `install.ps1` / `uninstall.ps1` | PowerShell equivalents for Windows |
-| `tests/run_tests.sh` | Test harness |
-| `tests/test_flags.sh` | Flag parser tests |
-| `tests/test_jobs.sh` | Job lifecycle tests |
-| `tests/test_slots.sh` | Slot counter tests |
-| `tests/test_changelog.py` | Python changelog extraction tests |
-| `tests/mock_claude.sh` | Mock claude binary for testing |
-| `docs/architecture.d2` | D2 sequence diagram source |
+PTSD pipeline skills are in `.claude/skills/` — auto-loaded when relevant.
 
-## Commands in `bin/glm`
+| Skill | When to Use |
+|-------|------------|
+| write-prd | Creating or updating a PRD section |
+| write-seed | Creating seed data for a feature |
+| write-bdd | Writing Gherkin BDD scenarios |
+| write-tests | Writing tests from BDD scenarios |
+| write-impl | Implementing to make tests pass |
+| create-tasks | Adding tasks to tasks.yaml |
+| review-prd | Reviewing PRD before advancing to seed |
+| review-seed | Reviewing seed data before advancing to bdd |
+| review-bdd | Reviewing BDD before advancing to tests |
+| review-tests | Reviewing tests before advancing to impl |
+| review-impl | Reviewing implementation after tests pass |
+| workflow | Session start or when unsure what to do next |
+| adopt | Bootstrapping existing project into PTSD |
 
-Each command is a `cmd_*` function in `lib/commands/*.sh`. Flag parsing is unified in `lib/flags.sh`. Commands: `run`, `start`, `status`, `result`, `log`, `list`, `clean`, `kill`, `update`, `session`.
+Use the corresponding write skill, then review skill at each pipeline stage.
 
-Job statuses: `queued` -> `running` -> `done`/`failed`/`timeout`/`killed`/`permission_error`.
+## Pipeline (strict order, no skipping)
 
-## Testing
+PRD → Seed → BDD → Tests → Implementation
 
-```bash
-bash tests/run_tests.sh           # Run all tests (syntax + unit + Python)
-python3 tests/test_changelog.py   # Python tests standalone
-```
+Each stage requires review score ≥ 7 before advancing.
+Hooks enforce gates automatically — blocked writes show the reason.
 
-## Development Notes
+## Rules
 
-- The script uses `set -euo pipefail` — all errors are fatal
-- Arithmetic uses `$((count + 1))` instead of `((count++))` because `((expr))` returns exit 1 when result is 0 under `set -e`
-- CLAUDE.md injection uses HTML comment markers (`<!-- GLM-SUBAGENT-START -->` / `<!-- GLM-SUBAGENT-END -->`) with awk-based replacement
-- Changelog extraction uses standalone `lib/changelog.py` (not inline Python)
-- Job IDs are timestamp + 4 random hex bytes: `job-YYYYMMDD-HHMMSS-XXXX`
-- Config priority: CLI flags > per-slot env vars (`GLM_OPUS_MODEL` etc.) > base `GLM_MODEL` > hardcoded `glm-4.7`
-- Slot management: flock-based O(1) counter on Linux, mkdir fallback on macOS
-- Atomic writes via `$target.tmp.$$` + `mv` pattern
-- PowerShell port uses Mutex for slot locking, Start-Process for real OS PID tracking, cksum-compatible CRC-32 hash
-- Install clones to `~/.local/share/GoLeM` (migrated from old `/tmp/GoLeM` location)
+- NO mocks for internal code. Real tests, real files, temp directories.
+- NO garbage files. Every file must link to a feature.
+- NO hiding errors. Explain WHY something failed.
+- NO over-engineering. Minimum code for the current task.
+- ALWAYS run: ptsd validate --agent before committing.
+- COMMIT FORMAT: [SCOPE] type: message
+  Scopes: PRD, SEED, BDD, TEST, IMPL, TASK, STATUS
+  Types: feat, add, fix, refactor, remove, update
+
+## Forbidden
+
+- Mocking internal code
+- Skipping pipeline steps
+- Hiding errors or pretending something works
+- Generating files not linked to a feature
+- Using --force, --skip-validation, --no-verify
+
+<!-- ---ptsd--- -->

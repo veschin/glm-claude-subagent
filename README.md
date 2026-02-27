@@ -37,14 +37,8 @@
 
 Requires: [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [Z.AI Coding Plan](https://z.ai/subscribe) key.
 
-**Linux / macOS / WSL:**
 ```bash
 curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh | bash
-```
-
-**Windows (PowerShell):**
-```powershell
-irm https://raw.githubusercontent.com/veschin/GoLeM/main/install.ps1 | iex
 ```
 
 Clones to `~/.local/share/GoLeM`, symlinks `glm` to `~/.local/bin/`, appends instructions to `~/.claude/CLAUDE.md`, saves config to `~/.config/GoLeM/`.
@@ -59,14 +53,8 @@ Pulls latest from GitHub and re-injects CLAUDE.md instructions. If local clone h
 
 ## Uninstall
 
-**Linux / macOS / WSL:**
 ```bash
 curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh | bash
-```
-
-**Windows (PowerShell):**
-```powershell
-irm https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.ps1 | iex
 ```
 
 ## Usage
@@ -143,15 +131,7 @@ Say **"delegate to glm"** and it fans out immediately. Your main session (Opus) 
 
 ## Response format
 
-```
-STATUS: OK
-FILES: src/auth.py, src/utils.py
----
-- Line 42: SQL injection via unsanitized input
-- Line 87: Missing null check on user object
-```
-
-Codes: `OK` `ERR_NO_FILES` `ERR_PARSE` `ERR_ACCESS` `ERR_PERMISSION` `ERR_TIMEOUT` `ERR_UNKNOWN`
+Agents respond with a one-sentence summary of what they did. The system prompt enforces scope control — agents modify only the files mentioned in the task and do not add unrequested code.
 
 ## Files
 
@@ -170,7 +150,6 @@ Codes: `OK` `ERR_NO_FILES` `ERR_PARSE` `ERR_ACCESS` `ERR_PERMISSION` `ERR_TIMEOU
 | Path | Purpose |
 |---|---|
 | `bin/glm` | Entry point (~60 lines): source lib/, dispatch commands |
-| `bin/glm.ps1` | PowerShell port with Mutex-based slots, real OS PID tracking |
 | `lib/log.sh` | Logging: info/warn/err/die/debug, exit codes |
 | `lib/config.sh` | Constants, load_config, load_credentials, check_dependencies |
 | `lib/flags.sh` | Unified parse_flags() for all commands |
@@ -188,8 +167,6 @@ Codes: `OK` `ERR_NO_FILES` `ERR_PARSE` `ERR_ACCESS` `ERR_PERMISSION` `ERR_TIMEOU
 | Linux | Full |
 | macOS | Full |
 | WSL | Full |
-| Windows (PowerShell) | Full — native `glm.ps1` |
-| Git Bash | Partial — uses bash `glm` script |
 
 ## Audit
 

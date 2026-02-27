@@ -1,0 +1,8 @@
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Binary output (match project name)
+/GoLeM
