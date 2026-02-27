@@ -1,3 +1,4 @@
+@session-command
 Feature: Session Command
   Launch an interactive Claude Code session using a GLM model through Z.AI.
   The session command provides a full interactive Claude Code experience

@@ -1,3 +1,4 @@
+@multi-provider
 Feature: Multi-Provider Support
   Configure multiple API providers beyond Z.AI.
   Provider sections in TOML define base_url, api_key_file, timeout_ms, and model mappings.

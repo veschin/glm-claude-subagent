@@ -1,3 +1,4 @@
+@agent-chaining
 Feature: Agent Chaining
   Sequential execution of multiple prompts where each step can reference prior results.
   Each prompt runs as a separate job. Previous job stdout is injected into the next prompt.
@@ -60,11 +61,11 @@ Feature: Agent Chaining
     And the exit code should be 1
 
   Scenario: Continue-on-error still injects stdout from failed step
-    Given the claude execution for step 1 fails but produces stdout "Partial result from step 1"
-    And the claude execution for step 2 succeeds
-    When I run "glm chain --continue-on-error 'Step 1 prompt' 'Step 2 prompt'"
+    Given the claude execution for "Analyze src/db/queries.go for N+1 query issues" fails but produces stdout "Found 2 potential N+1 issues at lines 45 and 89, but could not complete full analysis."
+    And the claude execution for "Fix the N+1 queries identified in the previous step" succeeds
+    When I run "glm chain --continue-on-error 'Analyze src/db/queries.go for N+1 query issues' 'Fix the N+1 queries identified in the previous step'"
     Then the second job's prompt should contain "Previous agent result:"
-    And the second job's prompt should contain "Partial result from step 1"
+    And the second job's prompt should contain "Found 2 potential N+1 issues at lines 45 and 89"
 
   # --- AC5: Returns final job's stdout; intermediate jobs preserved ---
 
@@ -116,8 +117,10 @@ Feature: Agent Chaining
   # --- Edge Case: All steps fail with --continue-on-error ---
 
   Scenario: All steps fail with continue-on-error returns non-zero exit
-    Given all 3 claude executions fail
-    When I run "glm chain --continue-on-error 'Step 1' 'Step 2' 'Step 3'"
+    Given the claude execution for "Analyze src/auth/ for security issues" fails with exit code 1
+    And the claude execution for "Write fixes for the issues" fails with exit code 1
+    And the claude execution for "Write tests for the fixes" fails with exit code 1
+    When I run "glm chain --continue-on-error 'Analyze src/auth/ for security issues' 'Write fixes for the issues' 'Write tests for the fixes'"
     Then all 3 steps should be executed
     And the exit code should be non-zero
 

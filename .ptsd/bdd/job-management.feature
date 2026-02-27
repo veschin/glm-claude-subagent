@@ -1,3 +1,4 @@
+@job-management
 Feature: Job Management Commands (list, log, clean, kill)
   Commands for inspecting and maintaining the job store. Provides visibility
   into running agents and cleanup of old jobs.

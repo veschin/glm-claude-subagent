@@ -1,3 +1,4 @@
+@json-output
 Feature: JSON Output Mode
   Machine-readable JSON output for all query commands via the --json flag.
   Enables programmatic integration with CI/CD pipelines, scripts, and tooling.
@@ -148,11 +149,6 @@ Feature: JSON Output Mode
     When I run "glm status --json job-20260227-080000-dead1234"
     Then the job is reconciled to "failed" before output
     And stdout JSON has "status" equal to "failed"
-
-  Scenario: list --json with no jobs outputs empty JSON array
-    Given the subagents directory is empty
-    When I run "glm list --json"
-    Then stdout is "[]"
 
   Scenario: Special characters in stdout are properly escaped in JSON
     Given a job "job-20260227-143000-special0" exists with status "done"

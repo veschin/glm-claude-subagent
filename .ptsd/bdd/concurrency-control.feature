@@ -1,3 +1,4 @@
+@concurrency-control
 Feature: Concurrency Control
   Limit the number of simultaneously running subagents using file-based
   locking with automatic recovery. Respect Z.AI coding plan API rate limits

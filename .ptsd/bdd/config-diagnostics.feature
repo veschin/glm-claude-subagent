@@ -1,3 +1,4 @@
+@config-diagnostics
 Feature: Config Validation and Diagnostics
   Commands for inspecting, modifying, and testing configuration.
   Provides glm doctor, glm config show, and glm config set commands.
@@ -194,15 +195,17 @@ Feature: Config Validation and Diagnostics
     Then the stderr should contain "err:user"
     And the exit code should be 1
 
-  Scenario: Config set accepts all valid permission modes
-    When I run "glm config set permission_mode bypassPermissions"
+  Scenario Outline: Config set accepts valid permission mode "<mode>"
+    When I run "glm config set permission_mode <mode>"
     Then the exit code should be 0
-    When I run "glm config set permission_mode acceptEdits"
-    Then the exit code should be 0
-    When I run "glm config set permission_mode default"
-    Then the exit code should be 0
-    When I run "glm config set permission_mode plan"
-    Then the exit code should be 0
+    And "~/.config/GoLeM/glm.toml" should contain 'permission_mode = "<mode>"'
+
+    Examples:
+      | mode               |
+      | bypassPermissions  |
+      | acceptEdits        |
+      | default            |
+      | plan               |
 
   # --- Edge Case: config set with same value as current ---
 

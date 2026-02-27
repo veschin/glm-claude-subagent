@@ -1,3 +1,4 @@
+@output-streaming
 Feature: Output Streaming
   Tail a running job's output in real-time using glm tail.
   Streams stderr.txt (agent activity log) to the terminal with polling.

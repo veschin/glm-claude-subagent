@@ -1,3 +1,4 @@
+@claude-execution
 Feature: Claude Execution Engine
   Build the environment and execute the claude CLI as a subprocess,
   then parse its JSON output into structured results. This is the

@@ -1,3 +1,4 @@
+@core-commands
 Feature: Core Commands (run, start, status, result)
   The four essential commands for executing and retrieving subagent work.
   run and start are the two execution modes (sync vs async). status and
@@ -183,8 +184,8 @@ Feature: Core Commands (run, start, status, result)
       | running          | job-20260227-101500-e5f6a7b8     |
       | failed           | job-20260227-102000-c9d0e1f2     |
       | timeout          | job-20260227-094500-f7e8d9c0     |
-      | killed           | job-20260227-100000-a1b2c3d4     |
-      | permission_error | job-20260227-100000-a1b2c3d4     |
+      | killed           | job-20260227-103000-b5a6c7d8     |
+      | permission_error | job-20260227-104500-d9e0f1a2     |
 
   # --- AC11: Status checks PID liveness ---
 

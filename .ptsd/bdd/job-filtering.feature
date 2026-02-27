@@ -1,3 +1,4 @@
+@job-filtering
 Feature: Job Filtering
   Filter jobs by status, project, and time in the list command.
   Jobs are stored in ~/.claude/subagents/{project-id}/{job-id}/ directories.

@@ -1,3 +1,4 @@
+@structured-logging
 Feature: Structured Logging
   Leveled, colored, optionally structured logging for all GoLeM output.
   Supports human-readable format with ANSI colors, JSON structured output,

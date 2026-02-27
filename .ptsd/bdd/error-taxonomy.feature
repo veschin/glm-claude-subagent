@@ -1,3 +1,4 @@
+@error-taxonomy
 Feature: Error Taxonomy
   Consistent, typed exit codes and error messages across all commands.
   Every error follows the format "err:{category} {message}" and maps to
@@ -11,7 +12,8 @@ Feature: Error Taxonomy
   # --- AC1: Exit codes preserved from legacy ---
 
   Scenario: Exit code 0 for successful operations
-    When a command completes successfully
+    Given a completed job exists with status "done"
+    When I run "glm status job-20260227-100000-a1b2c3d4"
     Then the exit code is 0
 
   Scenario: Exit code 1 for user errors (bad flags, missing prompt)
@@ -63,7 +65,8 @@ Feature: Error Taxonomy
     And the exit code is 1
 
   Scenario: Internal error follows err:internal format
-    When an unexpected internal error occurs
+    Given a job directory exists but its status file cannot be read due to I/O error
+    When I run "glm status job-20260227-100000-a1b2c3d4"
     Then stderr contains "err:internal"
     And the exit code is 1
 
@@ -145,15 +148,15 @@ Feature: Error Taxonomy
 
   Scenario: Multiple error categories — most specific wins
     Given the claude CLI is not in PATH
-    And the config file has a validation error
-    When GoLeM starts
-    Then the error category is "dependency" (most specific)
-    And not "validation"
+    And the config file has permission_mode set to "yolo"
+    When I run "glm run 'test prompt'"
+    Then the error category is "dependency"
+    And the exit code is 127
 
-  Scenario: Every exit path has a message (no empty errors)
-    When any GoLeM command fails
+  Scenario: Missing prompt produces non-empty error
+    When I run "glm run"
     Then stderr is not empty
-    And stderr contains "err:" followed by a category and message
+    And stderr matches "err:\w+ .+"
 
   Scenario: Non-UTF8 in stderr from claude is passed through
     Given a job runs and the claude subprocess writes binary/non-UTF8 content to stderr

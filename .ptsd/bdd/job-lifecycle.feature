@@ -1,3 +1,4 @@
+@job-lifecycle
 Feature: Job Lifecycle
   Manage the full lifecycle of subagent jobs: creation, status tracking,
   artifact storage, and cleanup. Jobs are stored on the filesystem with
