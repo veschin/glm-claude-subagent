@@ -1,0 +1,10 @@
+{
+  "model": "glm-4.7",
+  "opus_model": "glm-4.7",
+  "sonnet_model": "glm-4.7",
+  "haiku_model": "glm-4.7",
+  "permission_mode": "acceptEdits",
+  "max_parallel": 5,
+  "zai_api_key": "sk-zai-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0",
+  "debug": false
+}

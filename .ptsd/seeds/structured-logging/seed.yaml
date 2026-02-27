@@ -1,0 +1,5 @@
+feature: structured-logging
+files:
+  - log_human_tty.json
+  - log_human_pipe.json
+  - log_json_format.json

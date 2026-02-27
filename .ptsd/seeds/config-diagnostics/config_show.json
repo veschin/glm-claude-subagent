@@ -1,0 +1,18 @@
+{
+  "model": {
+    "value": "glm-4.7",
+    "source": "config"
+  },
+  "opus_model": {
+    "value": "glm-4.7",
+    "source": "default"
+  },
+  "permission_mode": {
+    "value": "acceptEdits",
+    "source": "env"
+  },
+  "max_parallel": {
+    "value": 3,
+    "source": "default"
+  }
+}

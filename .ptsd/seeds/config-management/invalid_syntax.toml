@@ -1,0 +1,3 @@
+model = "glm-4.7"
+this is not valid toml [[[
+permission_mode = broken

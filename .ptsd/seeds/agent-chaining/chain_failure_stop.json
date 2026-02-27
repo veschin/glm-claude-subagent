@@ -1,0 +1,13 @@
+{
+  "prompts": [
+    "Step 1",
+    "Step 2 should not run"
+  ],
+  "step_results": [
+    "error"
+  ],
+  "step_statuses": [
+    "failed"
+  ],
+  "expected_exit": 1
+}

@@ -1,0 +1,6 @@
+{
+  "prompts": [
+    "Single task equivalent to run"
+  ],
+  "expected_behavior": "equivalent to glm run"
+}

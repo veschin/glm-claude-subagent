@@ -1,0 +1,9 @@
+{
+  "id": "job-20260227-143205-a8f3b1c2",
+  "status": "running",
+  "project": "/home/veschin/work/my-app",
+  "prompt": "Analyze src/auth/ for security issues",
+  "pid": 48201,
+  "created_at": "2026-02-27T14:32:05+03:00",
+  "elapsed_seconds": 127
+}

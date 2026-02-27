@@ -1,0 +1,30 @@
+{
+  "checks": [
+    {
+      "name": "claude_cli",
+      "status": "fail",
+      "detail": "claude CLI not found in PATH"
+    },
+    {
+      "name": "api_key",
+      "status": "ok",
+      "detail": "API key configured via /home/veschin/.config/GoLeM/api_key.txt"
+    },
+    {
+      "name": "zai_reachable",
+      "status": "fail",
+      "detail": "https://api.z.ai/api/anthropic connection timed out after 5000ms"
+    },
+    {
+      "name": "models",
+      "status": "ok",
+      "detail": "model=glm-4.7, opus_model=glm-4.7"
+    },
+    {
+      "name": "slots",
+      "status": "ok",
+      "detail": "0/3 slots in use"
+    }
+  ],
+  "overall": "fail"
+}

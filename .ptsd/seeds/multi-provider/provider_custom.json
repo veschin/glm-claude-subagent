@@ -1,0 +1,10 @@
+{
+  "provider": "custom",
+  "expected_env": {
+    "ANTHROPIC_BASE_URL": "https://api.custom-llm.example.com/v1",
+    "ANTHROPIC_API_KEY_FILE": "/home/veschin/.config/GoLeM/custom_api_key.txt",
+    "ANTHROPIC_MODEL": "custom-large-v2",
+    "CLAUDE_CODE_USE_BEDROCK": "",
+    "CLAUDE_CODE_USE_VERTEX": ""
+  }
+}

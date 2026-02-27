@@ -1,0 +1,7 @@
+feature: config-diagnostics
+files:
+  - doctor_all_ok.json
+  - doctor_failures.json
+  - config_show.json
+  - config_set_valid.json
+  - config_set_invalid_key.json

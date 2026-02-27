@@ -1,0 +1,6 @@
+feature: session-command
+files:
+  - session_defaults.json
+  - session_with_model.json
+  - session_passthrough.json
+status: complete

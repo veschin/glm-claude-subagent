@@ -1,0 +1,13 @@
+default_provider = "zai"
+
+[providers.zai]
+base_url = "https://api.z.ai/api/anthropic"
+api_key_file = "/home/veschin/.config/GoLeM/api_key.txt"
+model = "glm-4.7"
+opus_model = "glm-4.7"
+
+[providers.custom]
+base_url = "https://api.custom-llm.example.com/v1"
+api_key_file = "/home/veschin/.config/GoLeM/custom_api_key.txt"
+model = "custom-large-v2"
+opus_model = "custom-large-v2"

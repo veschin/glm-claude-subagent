@@ -1,0 +1,12 @@
+{
+  "model": "glm-4.7",
+  "opus_model": "glm-4.7",
+  "sonnet_model": "glm-4.7",
+  "haiku_model": "glm-4.7",
+  "permission_mode": "bypassPermissions",
+  "max_parallel": 3,
+  "zai_base_url": "https://api.z.ai/api/anthropic",
+  "zai_api_timeout_ms": "3000000",
+  "default_timeout": 3000,
+  "debug": false
+}

@@ -1,0 +1,16 @@
+{
+  "description": "Per-slot model override flags for opus, sonnet, and haiku",
+  "args": [
+    "run",
+    "--opus", "glm-4.7",
+    "--sonnet", "glm-4.5",
+    "--haiku", "glm-4.0",
+    "Write tests"
+  ],
+  "expected": {
+    "opus": "glm-4.7",
+    "sonnet": "glm-4.5",
+    "haiku": "glm-4.0",
+    "prompt": "Write tests"
+  }
+}

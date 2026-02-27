@@ -1,0 +1,16 @@
+{
+  "id": "job-20260227-140000-d4e5f6a7",
+  "status": "done",
+  "project": "/home/veschin/work/my-app",
+  "prompt": "Write unit tests for src/utils/validate.ts",
+  "created_at": "2026-02-27T14:00:00+03:00",
+  "finished_at": "2026-02-27T14:05:32+03:00",
+  "duration_seconds": 332,
+  "exit_code": 0,
+  "stdout": "Created 8 test cases in src/utils/__tests__/validate.test.ts.\nAll tests passing.\n\nCoverage: 94% statements, 87% branches.",
+  "stderr": "[GoLeM] Job started: job-20260227-140000-d4e5f6a7\n[GoLeM] Working directory: /home/veschin/work/my-app\n[GoLeM] Job completed successfully",
+  "changelog": [
+    "src/utils/__tests__/validate.test.ts (created)",
+    "src/utils/validate.ts (modified)"
+  ]
+}

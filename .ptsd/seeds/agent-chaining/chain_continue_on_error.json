@@ -1,0 +1,16 @@
+{
+  "prompts": [
+    "Step 1 fails",
+    "Step 2 runs anyway",
+    "Step 3 runs"
+  ],
+  "flags": [
+    "--continue-on-error"
+  ],
+  "step_statuses": [
+    "failed",
+    "done",
+    "done"
+  ],
+  "expected_exit": 1
+}
