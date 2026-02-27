@@ -47,7 +47,7 @@ curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh | bash
 irm https://raw.githubusercontent.com/veschin/GoLeM/main/install.ps1 | iex
 ```
 
-Clones to `/tmp`, symlinks `glm` to `~/.local/bin/`, appends instructions to `~/.claude/CLAUDE.md`, saves config to `~/.config/GoLeM/`.
+Clones to `~/.local/share/GoLeM`, symlinks `glm` to `~/.local/bin/`, appends instructions to `~/.claude/CLAUDE.md`, saves config to `~/.config/GoLeM/`.
 
 ## Update
 
@@ -155,13 +155,31 @@ Codes: `OK` `ERR_NO_FILES` `ERR_PARSE` `ERR_ACCESS` `ERR_PERMISSION` `ERR_TIMEOU
 
 ## Files
 
+**Runtime files:**
+
 | Path | Purpose |
 |---|---|
 | `~/.local/bin/glm` | Symlink to cloned `bin/glm` |
 | `~/.claude/CLAUDE.md` | Auto-delegation instructions (between markers) |
 | `~/.config/GoLeM/glm.conf` | Config — models, permissions, parallelism |
 | `~/.config/GoLeM/zai_api_key` | Z.AI API key (chmod 600) |
-| `~/.claude/subagents/job-*/` | Job results — stdout, changelog, raw JSON |
+| `~/.claude/subagents/<project>/job-*/` | Job results — stdout, changelog, raw JSON |
+
+**Source layout:**
+
+| Path | Purpose |
+|---|---|
+| `bin/glm` | Entry point (~60 lines): source lib/, dispatch commands |
+| `bin/glm.ps1` | PowerShell port with Mutex-based slots, real OS PID tracking |
+| `lib/log.sh` | Logging: info/warn/err/die/debug, exit codes |
+| `lib/config.sh` | Constants, load_config, load_credentials, check_dependencies |
+| `lib/flags.sh` | Unified parse_flags() for all commands |
+| `lib/prompt.sh` | SYSTEM_PROMPT constant |
+| `lib/jobs.sh` | Job lifecycle, project IDs, flock-based slot management |
+| `lib/claude.sh` | Claude env/flags/execution |
+| `lib/changelog.py` | Standalone Python: JSON -> stdout.txt + changelog.txt |
+| `lib/commands/*.sh` | One file per command (run, start, status, etc.) |
+| `tests/` | Test harness + unit tests (bash + python) |
 
 ## Platforms
 
@@ -170,7 +188,8 @@ Codes: `OK` `ERR_NO_FILES` `ERR_PARSE` `ERR_ACCESS` `ERR_PERMISSION` `ERR_TIMEOU
 | Linux | Full |
 | macOS | Full |
 | WSL | Full |
-| Git Bash / PowerShell | Partial — needs bash for `glm` script |
+| Windows (PowerShell) | Full — native `glm.ps1` |
+| Git Bash | Partial — uses bash `glm` script |
 
 ## Audit
 
