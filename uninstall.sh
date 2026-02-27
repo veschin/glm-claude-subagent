@@ -39,43 +39,59 @@ if [[ -f "$CONFIG_FILE" ]]; then
     info "Found config at $CONFIG_FILE"
 fi
 
-MARKER_START="<!-- GLM-SUBAGENT-START -->"
-MARKER_END="<!-- GLM-SUBAGENT-END -->"
+# Try glm _uninstall first (handles binary removal + CLAUDE.md cleanup)
+if command -v glm &>/dev/null; then
+    glm _uninstall 2>/dev/null && {
+        # glm _uninstall handled binary + CLAUDE.md, now handle credentials and jobs
+        true
+    } || {
+        warn "glm _uninstall failed, performing manual cleanup"
+    }
+else
+    # Manual cleanup — same as old uninstall.sh
+    MARKER_START="<!-- GLM-SUBAGENT-START -->"
+    MARKER_END="<!-- GLM-SUBAGENT-END -->"
 
-# --- Remove symlink ---
-if [[ -L "$TARGET_BIN" ]]; then
-    rm "$TARGET_BIN"
-    info "Removed $TARGET_BIN"
-elif [[ -f "$TARGET_BIN" ]]; then
-    warn "$TARGET_BIN is a regular file."
-    if ask_yn "  Remove anyway?"; then
+    # Remove symlink
+    if [[ -L "$TARGET_BIN" ]]; then
         rm "$TARGET_BIN"
         info "Removed $TARGET_BIN"
-    fi
-else
-    info "No glm binary found. Skipping."
-fi
-
-# --- Remove GLM section from CLAUDE.md ---
-if [[ -f "$TARGET_CLAUDE_MD" ]] && grep -q "$MARKER_START" "$TARGET_CLAUDE_MD"; then
-    tmp="$(mktemp)"
-    awk -v start="$MARKER_START" -v end="$MARKER_END" '
-        $0 == start { skip=1; next }
-        $0 == end   { skip=0; next }
-        !skip { print }
-    ' "$TARGET_CLAUDE_MD" > "$tmp"
-
-    # Check if file is now empty
-    content="$(grep -v '^\s*$' "$tmp" | grep -v '^# ' || true)"
-    if [[ -z "$content" ]]; then
-        rm "$TARGET_CLAUDE_MD" "$tmp"
-        info "Removed CLAUDE.md (empty after cleanup)"
+    elif [[ -f "$TARGET_BIN" ]]; then
+        warn "$TARGET_BIN is a regular file."
+        if ask_yn "  Remove anyway?"; then
+            rm "$TARGET_BIN"
+            info "Removed $TARGET_BIN"
+        fi
     else
-        mv "$tmp" "$TARGET_CLAUDE_MD"
-        info "Removed GLM section from CLAUDE.md"
+        info "No glm binary found. Skipping."
     fi
-else
-    info "No GLM markers in CLAUDE.md. Skipping."
+
+    # Remove GLM section from CLAUDE.md
+    if [[ -f "$TARGET_CLAUDE_MD" ]] && grep -q "$MARKER_START" "$TARGET_CLAUDE_MD"; then
+        tmp="$(mktemp)"
+        awk -v start="$MARKER_START" -v end="$MARKER_END" '
+            $0 == start { skip=1; next }
+            $0 == end   { skip=0; next }
+            !skip { print }
+        ' "$TARGET_CLAUDE_MD" > "$tmp"
+
+        content="$(grep -v '^\s*$' "$tmp" | grep -v '^# ' || true)"
+        if [[ -z "$content" ]]; then
+            rm "$TARGET_CLAUDE_MD" "$tmp"
+            info "Removed CLAUDE.md (empty after cleanup)"
+        else
+            mv "$tmp" "$TARGET_CLAUDE_MD"
+            info "Removed GLM section from CLAUDE.md"
+        fi
+    else
+        info "No GLM markers in CLAUDE.md. Skipping."
+    fi
+
+    # Remove clone
+    if [[ -d "$CLONE_DIR" ]]; then
+        rm -rf "$CLONE_DIR"
+        info "Removed clone at $CLONE_DIR"
+    fi
 fi
 
 # --- Credentials ---
@@ -94,7 +110,7 @@ fi
 
 # --- Job results ---
 if [[ -d "$TARGET_SUBAGENTS" ]]; then
-    job_count="$(find "$TARGET_SUBAGENTS" -maxdepth 1 -name "job-*" -type d 2>/dev/null | wc -l)"
+    job_count="$(find "$TARGET_SUBAGENTS" -maxdepth 2 -name "job-*" -type d 2>/dev/null | wc -l)"
     if [[ "$job_count" -gt 0 ]]; then
         if ask_yn "Remove $job_count job result(s)?"; then
             rm -rf "$TARGET_SUBAGENTS"
@@ -103,12 +119,6 @@ if [[ -d "$TARGET_SUBAGENTS" ]]; then
             info "Keeping job results."
         fi
     fi
-fi
-
-# --- Clone directory ---
-if [[ -d "$CLONE_DIR" ]]; then
-    rm -rf "$CLONE_DIR"
-    info "Removed clone at $CLONE_DIR"
 fi
 
 # --- Config directory ---

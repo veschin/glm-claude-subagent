@@ -5,14 +5,6 @@ set -euo pipefail
 
 REPO_URL="https://github.com/veschin/GoLeM.git"
 CLONE_DIR="${HOME}/.local/share/GoLeM"
-CONFIG_DIR="${HOME}/.config/GoLeM"
-TARGET_BIN_DIR="${HOME}/.local/bin"
-TARGET_BIN="${TARGET_BIN_DIR}/glm"
-TARGET_CLAUDE_MD="${HOME}/.claude/CLAUDE.md"
-TARGET_SUBAGENTS="${HOME}/.claude/subagents"
-
-MARKER_START="<!-- GLM-SUBAGENT-START -->"
-MARKER_END="<!-- GLM-SUBAGENT-END -->"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -22,16 +14,6 @@ NC='\033[0m'
 info()  { echo -e "${GREEN}[+]${NC} $1"; }
 warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
 err()   { echo -e "${RED}[x]${NC} $1" >&2; }
-
-ask_yn() {
-    local prompt="$1" default="${2:-n}" yn
-    if [[ "$default" == "y" ]]; then
-        read -rp "$prompt [Y/n]: " yn < /dev/tty; yn="${yn:-y}"
-    else
-        read -rp "$prompt [y/N]: " yn < /dev/tty; yn="${yn:-n}"
-    fi
-    [[ "$yn" =~ ^[Yy] ]]
-}
 
 # --- Detect OS ---
 detect_os() {
@@ -86,140 +68,6 @@ else
     git clone --quiet "$REPO_URL" "$CLONE_DIR"
 fi
 
-# --- Config directory ---
-mkdir -p "$CONFIG_DIR"
-
-# Save install metadata for uninstall
-cat > "$CONFIG_DIR/config.json" <<EOF
-{
-  "installed_at": "$(date -Iseconds)",
-  "clone_dir": "$CLONE_DIR",
-  "bin": "$TARGET_BIN",
-  "claude_md": "$TARGET_CLAUDE_MD",
-  "subagents_dir": "$TARGET_SUBAGENTS",
-  "os": "$OS"
-}
-EOF
-info "Config saved to $CONFIG_DIR/config.json"
-
-# --- API key ---
-ZAI_ENV="$CONFIG_DIR/zai_api_key"
-
-if [[ -f "$ZAI_ENV" ]]; then
-    warn "Z.AI credentials already exist."
-    if ask_yn "  Overwrite with a new key?"; then
-        rm "$ZAI_ENV"
-    else
-        info "Keeping existing credentials."
-    fi
-fi
-
-if [[ ! -f "$ZAI_ENV" ]]; then
-    echo ""
-    echo "  Get your key at: https://z.ai/subscribe (GLM Coding Plan)"
-    echo ""
-    read -rsp "  Z.AI API key: " api_key < /dev/tty
-    echo ""
-
-    if [[ -z "$api_key" ]]; then
-        err "API key cannot be empty."
-        exit 1
-    fi
-
-    echo "ZAI_API_KEY=\"$api_key\"" > "$ZAI_ENV"
-    chmod 600 "$ZAI_ENV"
-    info "Credentials saved."
-fi
-
-# --- Permission mode ---
-GLM_CONF="$CONFIG_DIR/glm.conf"
-if [[ ! -f "$GLM_CONF" ]]; then
-    echo ""
-    echo "  Permission mode for subagents:"
-    echo "    1) bypassPermissions — full autonomous access (default)"
-    echo "    2) acceptEdits       — auto-accept edits only (restricted)"
-    echo ""
-    read -rp "  Choice [1]: " perm_choice < /dev/tty
-    perm_choice="${perm_choice:-1}"
-
-    case "$perm_choice" in
-        2) perm_mode="acceptEdits" ;;
-        *) perm_mode="bypassPermissions" ;;
-    esac
-
-    echo "GLM_PERMISSION_MODE=\"$perm_mode\"" > "$GLM_CONF"
-    info "Permission mode: $perm_mode"
-fi
-
-# --- Symlink glm binary ---
-GLM_BIN="$CLONE_DIR/bin/glm"
-chmod +x "$GLM_BIN"
-mkdir -p "$TARGET_BIN_DIR"
-
-if [[ -e "$TARGET_BIN" && ! -L "$TARGET_BIN" ]]; then
-    warn "Regular file exists at $TARGET_BIN"
-    if ask_yn "  Replace with symlink?"; then
-        rm "$TARGET_BIN"
-    else
-        info "Keeping existing file."
-    fi
-fi
-
-if [[ -L "$TARGET_BIN" || ! -e "$TARGET_BIN" ]]; then
-    ln -sf "$GLM_BIN" "$TARGET_BIN"
-    info "Symlinked $TARGET_BIN -> $GLM_BIN"
-fi
-
-# --- Check PATH ---
-if ! echo "$PATH" | tr ':' '\n' | grep -qx "$TARGET_BIN_DIR"; then
-    warn "$TARGET_BIN_DIR is not in PATH. Add to your shell profile:"
-    warn "  export PATH=\"\$HOME/.local/bin:\$PATH\""
-fi
-
-# --- CLAUDE.md ---
-glm_section="$(cat "$CLONE_DIR/claude/CLAUDE.md")"
-
-if [[ -f "$TARGET_CLAUDE_MD" ]]; then
-    if grep -q "$MARKER_START" "$TARGET_CLAUDE_MD"; then
-        info "Updating existing GLM section in CLAUDE.md"
-        tmp="$(mktemp)"
-        awk -v start="$MARKER_START" -v end="$MARKER_END" '
-            $0 == start { skip=1; next }
-            $0 == end   { skip=0; next }
-            !skip { print }
-        ' "$TARGET_CLAUDE_MD" > "$tmp"
-        echo "" >> "$tmp"
-        echo "$glm_section" >> "$tmp"
-        mv "$tmp" "$TARGET_CLAUDE_MD"
-    else
-        info "Appending GLM section to existing CLAUDE.md"
-        echo "" >> "$TARGET_CLAUDE_MD"
-        echo "$glm_section" >> "$TARGET_CLAUDE_MD"
-    fi
-else
-    mkdir -p "$(dirname "$TARGET_CLAUDE_MD")"
-    echo "# System-Wide Instructions" > "$TARGET_CLAUDE_MD"
-    echo "" >> "$TARGET_CLAUDE_MD"
-    echo "$glm_section" >> "$TARGET_CLAUDE_MD"
-    info "Created $TARGET_CLAUDE_MD"
-fi
-
-# --- Subagents directory ---
-mkdir -p "$TARGET_SUBAGENTS"
-
-# --- Done ---
-echo ""
-info "GoLeM installed!"
-echo ""
-echo "  Usage:"
-echo "    glm session                    # interactive Claude Code on GLM-5"
-echo "    glm run \"your prompt\"        # sync"
-echo "    glm start \"your prompt\"      # async"
-echo "    glm list                        # show jobs"
-echo ""
-echo "  Update:"
-echo "    glm update"
-echo ""
-echo "  Uninstall:"
-echo "    curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh | bash"
-echo ""
+# --- Delegate to glm _install ---
+chmod +x "$CLONE_DIR/bin/glm"
+"$CLONE_DIR/bin/glm" _install
