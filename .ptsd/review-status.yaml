@@ -2,90 +2,90 @@ features:
   agent-chaining:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   claude-execution:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   concurrency-control:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   config-diagnostics:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   config-management:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   core-commands:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   cost-tracking:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   error-taxonomy:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   install-update:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   job-filtering:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   job-lifecycle:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   job-management:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   json-output:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   multi-provider:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   output-streaming:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   session-command:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   stale-recovery:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
   structured-logging:
     stage: seed
     tests: absent
-    review: pending
+    review: passed
     issues: 0
