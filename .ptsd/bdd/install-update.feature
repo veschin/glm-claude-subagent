@@ -1,4 +1,4 @@
-@install-update
+@feature:install-update
 Feature: Install / Uninstall / Update
   Distribution, installation, and self-update mechanisms for GoLeM.
   Includes interactive setup, CLAUDE.md injection, symlink creation,

@@ -1,4 +1,4 @@
-@config-management
+@feature:config-management
 Feature: Configuration Management
   Load, validate, and expose configuration for all GoLeM operations.
   Config is read from TOML files and environment variables with strict

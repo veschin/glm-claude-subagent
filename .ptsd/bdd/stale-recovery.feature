@@ -1,4 +1,4 @@
-@stale-recovery
+@feature:stale-recovery
 Feature: Stale Job Recovery
   Centralized detection and recovery of orphaned, crashed, or stuck jobs.
   A single reconcile() function detects stale jobs at startup and resets

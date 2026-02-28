@@ -1,4 +1,4 @@
-@config-diagnostics
+@feature:config-diagnostics
 Feature: Config Validation and Diagnostics
   Commands for inspecting, modifying, and testing configuration.
   Provides glm doctor, glm config show, and glm config set commands.

@@ -1,4 +1,4 @@
-@agent-chaining
+@feature:agent-chaining
 Feature: Agent Chaining
   Sequential execution of multiple prompts where each step can reference prior results.
   Each prompt runs as a separate job. Previous job stdout is injected into the next prompt.

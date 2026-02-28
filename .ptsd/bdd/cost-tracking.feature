@@ -1,4 +1,4 @@
-@cost-tracking
+@feature:cost-tracking
 Feature: Cost / Token Tracking
   Track token usage from completed jobs.
   Parses usage data from raw.json and provides cost command for querying usage.

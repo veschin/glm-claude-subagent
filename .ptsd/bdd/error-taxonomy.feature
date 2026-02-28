@@ -1,4 +1,4 @@
-@error-taxonomy
+@feature:error-taxonomy
 Feature: Error Taxonomy
   Consistent, typed exit codes and error messages across all commands.
   Every error follows the format "err:{category} {message}" and maps to

@@ -1,4 +1,4 @@
-@json-output
+@feature:json-output
 Feature: JSON Output Mode
   Machine-readable JSON output for all query commands via the --json flag.
   Enables programmatic integration with CI/CD pipelines, scripts, and tooling.

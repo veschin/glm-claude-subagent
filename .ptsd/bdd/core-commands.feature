@@ -1,4 +1,4 @@
-@core-commands
+@feature:core-commands
 Feature: Core Commands (run, start, status, result)
   The four essential commands for executing and retrieving subagent work.
   run and start are the two execution modes (sync vs async). status and
