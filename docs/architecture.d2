@@ -1,0 +1,56 @@
+direction: right
+
+dev_user: "Developer\n(Opus session)" {
+  shape: person
+  style.fill: "#c1d3fe"
+}
+
+g_glm: "glm CLI" {
+  style.fill: "#f0f4ff"
+  style.stroke: "#7d8597"
+
+  main: "main.go\nCLI dispatch"
+  config: "config/\nTOML + env\n+ API key"
+  cmds: "cmd/\nrun, start, chain\nlist, status, kill\nsession, doctor"
+  jobs: "job/\nlifecycle\nstale recovery"
+  slots: "slot/\nflock/mkdir\nconcurrency"
+  exec: "claude/\nexec + parse\nJSON output"
+  logs: "log/\nhuman + JSON\nleveled output"
+  codes: "exitcode/\nerror taxonomy"
+
+  main -> config: load
+  main -> cmds: dispatch
+  cmds -> jobs: "create/find\njob dir"
+  cmds -> slots: "acquire\nslot lock"
+  cmds -> exec: "spawn\nclaude"
+  cmds -> logs: log
+  cmds -> codes: "map exit\ncodes"
+  jobs -> jobs: "reconcile\nstale PIDs"
+}
+
+ex_zai: "Z.AI API\n(GLM-5)" {
+  shape: cloud
+  style.fill: "#7d8597"
+  style.font-color: "#ffffff"
+}
+
+ex_claude: "claude CLI\nsubprocess" {
+  style.fill: "#f9c784"
+}
+
+db_jobs: "~/.claude/subagents/\n<project>/<job-id>/" {
+  shape: cylinder
+  style.fill: "#cfe1b9"
+}
+
+db_config: "~/.config/GoLeM/\nglm.toml + api key" {
+  shape: stored_data
+  style.fill: "#cfe1b9"
+}
+
+dev_user -> g_glm.main: "glm run / start\n/ chain / session"
+g_glm.config -> db_config: read
+g_glm.exec -> ex_claude: "fork + env\ninjection"
+ex_claude -> ex_zai: "LLM calls\n(routed via env)"
+g_glm.jobs -> db_jobs: "status, stdout\nchangelog, raw.json"
+g_glm.cmds -> dev_user: "result / status\nstdout + stderr"

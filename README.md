@@ -16,7 +16,7 @@
 
 ---
 
-![Architecture](docs/architecture.svg?v=3)
+![Architecture](docs/architecture.svg?v=4)
 
 ## Table of Contents
 
