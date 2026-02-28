@@ -44,3 +44,18 @@ tasks:
     title: redo seed for structured-logging
     status: DONE
     priority: A
+  - id: T-10
+    feature: json-output
+    title: redo impl for json-output
+    status: DONE
+    priority: A
+  - id: T-11
+    feature: job-filtering
+    title: redo impl for job-filtering
+    status: DONE
+    priority: A
+  - id: T-12
+    feature: structured-logging
+    title: redo impl for structured-logging
+    status: DONE
+    priority: A
