@@ -35,13 +35,21 @@
 
 ## Install
 
-Requires: [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [Z.AI Coding Plan](https://z.ai/subscribe) key.
+Requires: [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [Z.AI Coding Plan](https://z.ai/subscribe) key, Go 1.25+.
 
 ```bash
-curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/install.sh | bash
+go install github.com/veschin/GoLeM/cmd/glm@latest
 ```
 
-Clones to `~/.local/share/GoLeM`, symlinks `glm` to `~/.local/bin/`, appends instructions to `~/.claude/CLAUDE.md`, saves config to `~/.config/GoLeM/`.
+Or build from source:
+```bash
+git clone https://github.com/veschin/GoLeM.git
+cd GoLeM
+go build -o ~/.local/bin/glm ./cmd/glm/
+glm _install
+```
+
+`_install` creates `~/.config/GoLeM/`, asks for Z.AI API key, symlinks the binary, and injects delegation instructions into `~/.claude/CLAUDE.md`.
 
 ## Update
 
@@ -49,12 +57,10 @@ Clones to `~/.local/share/GoLeM`, symlinks `glm` to `~/.local/bin/`, appends ins
 glm update
 ```
 
-Pulls latest from GitHub and re-injects CLAUDE.md instructions. If local clone has diverged — suggests reinstall.
-
 ## Uninstall
 
 ```bash
-curl -sL https://raw.githubusercontent.com/veschin/GoLeM/main/uninstall.sh | bash
+glm _uninstall
 ```
 
 ## Usage
@@ -69,21 +75,28 @@ glm log JOB_ID                     # show file changes
 glm list                           # all jobs
 glm clean --days 1                 # cleanup old jobs
 glm kill JOB_ID                    # terminate job
-glm update                         # self-update from GitHub
+glm chain "p1" "p2" "p3"          # chained execution (stdout → next prompt)
+glm doctor                         # system health check
+glm config show                    # show current config
+glm config set KEY VALUE           # change config value
 ```
 
 **Examples:**
 ```bash
-glm run -d ~/project "find bugs"           # set working directory
-glm run -m glm-4 "refactor auth"           # all slots → glm-4
-glm run --opus glm-4.7 --haiku glm-4 "task"  # opus=glm-4.7, haiku=glm-4
-glm session --sonnet glm-4                  # session with custom sonnet
-glm run --unsafe "deploy hotfix"            # bypass permission checks
+glm run -d ~/project "find bugs"              # set working directory
+glm run -m glm-4 "refactor auth"              # all slots → glm-4
+glm run --opus glm-4.7 --haiku glm-4 "task"  # per-slot models
+glm session --sonnet glm-4                    # session with custom sonnet
+glm run --unsafe "deploy hotfix"              # bypass permission checks
+glm list --status running                     # filter by status
+glm list --status done,failed --since 2h      # combine filters
+glm list --json                               # JSON output for scripting
+glm doctor --json                             # machine-readable health check
 ```
 
 ## Flags
 
-Flags work with `session`, `run`, and `start`.
+Flags work with `session`, `run`, `start`, and `chain`.
 
 | Flag | Description |
 |---|---|
@@ -91,10 +104,11 @@ Flags work with `session`, `run`, and `start`.
 | `--opus MODEL` | Set opus model only |
 | `--sonnet MODEL` | Set sonnet model only |
 | `--haiku MODEL` | Set haiku model only |
-| `-d DIR` | Working directory (run/start only) |
-| `-t SEC` | Timeout in seconds (run/start only) |
-| `--unsafe` | Bypass all permission checks (run/start only) |
-| `--mode MODE` | Permission mode: `acceptEdits`, `plan` (run/start only) |
+| `-d DIR` | Working directory |
+| `-t SEC` | Timeout in seconds |
+| `--unsafe` | Bypass all permission checks |
+| `--mode MODE` | Permission mode: `bypassPermissions`, `acceptEdits`, `plan` |
+| `--json` | JSON output (works with list, status, result, log) |
 
 Claude Code uses three model slots internally — heavy tasks get opus, standard tasks get sonnet, fast tasks get haiku. By default all three point to `glm-4.7`. Use `-m` to change them all at once, or `--opus`/`--sonnet`/`--haiku` to tune individually.
 
@@ -102,26 +116,35 @@ Claude Code uses three model slots internally — heavy tasks get opus, standard
 
 ## Config
 
-`~/.config/GoLeM/glm.conf` — sourced as bash on every `glm` invocation.
+`~/.config/GoLeM/glm.toml` — TOML config loaded on every `glm` invocation. Environment variables override file values.
 
-| Variable | Default | Description |
-|---|---|---|
-| `GLM_MODEL` | `glm-4.7` | Default model for all three slots. When set, opus, sonnet, and haiku all use this model unless overridden individually below. |
-| `GLM_OPUS_MODEL` | value of `GLM_MODEL` | Model for the **opus** slot. Claude Code routes heavy tasks here — planning, complex reasoning, architecture decisions. Override this to use a stronger or weaker model for those tasks. |
-| `GLM_SONNET_MODEL` | value of `GLM_MODEL` | Model for the **sonnet** slot. Standard workhorse — code generation, edits, refactoring. This is the slot `run`/`start` subagents use by default. |
-| `GLM_HAIKU_MODEL` | value of `GLM_MODEL` | Model for the **haiku** slot. Fast tasks — file search, glob, grep routing, quick classifications. Use a lighter model here to save quota and speed up. |
-| `GLM_PERMISSION_MODE` | `bypassPermissions` | Default permission mode for subagents. `bypassPermissions` — full autonomous access, no confirmation prompts. `acceptEdits` — auto-accept file edits only, asks for shell commands. Installer asks which mode to use on first run. |
-| `GLM_MAX_PARALLEL` | `3` | Maximum concurrent subagent processes. Z.AI rate-limits GLM-5 to 3 simultaneous requests, so the default matches. Excess agents queue and start automatically when a slot frees up. Set to `0` for unlimited. |
-
-**Priority:** inline flag (`-m`, `--opus` etc.) > per-slot config (`GLM_OPUS_MODEL`) > base config (`GLM_MODEL`) > default (`glm-4.7`).
-
-Example config:
 ```bash
-GLM_MODEL="glm-4.7"
-GLM_HAIKU_MODEL="glm-4"          # lighter model for fast tasks
-GLM_PERMISSION_MODE="bypassPermissions"
-GLM_MAX_PARALLEL=3
+glm config show                    # view all values with sources
+glm config set max_parallel 5      # change a value
+glm config set model glm-4         # set default model
 ```
+
+| Key | Env override | Default | Description |
+|---|---|---|---|
+| `model` | `GLM_MODEL` | `glm-4.7` | Default model for all three slots |
+| `opus_model` | `GLM_OPUS_MODEL` | (model) | Model for heavy tasks |
+| `sonnet_model` | `GLM_SONNET_MODEL` | (model) | Model for standard tasks |
+| `haiku_model` | `GLM_HAIKU_MODEL` | (model) | Model for fast tasks |
+| `permission_mode` | `GLM_PERMISSION_MODE` | `bypassPermissions` | Default permission mode |
+| `max_parallel` | `GLM_MAX_PARALLEL` | `3` | Max concurrent agents |
+| `debug` | `GLM_DEBUG` | `false` | Enable debug logging to stderr |
+
+**Priority:** flag (`-m`, `--opus`) > env var > config file > default.
+
+## Debug & logging
+
+```bash
+GLM_DEBUG=1 glm run "task"                    # debug messages to stderr
+GLM_DEBUG=1 GLM_LOG_FORMAT=json glm doctor    # structured JSON logs
+GLM_LOG_FILE=/tmp/glm.log glm run "task"      # additionally log to file
+```
+
+Log levels: `[D]` debug, `[+]` info, `[!]` warn, `[x]` error. Colors on TTY, plain text when piped.
 
 ## How Claude Code uses it
 
@@ -129,9 +152,17 @@ After install, every Claude Code session auto-delegates work to `glm` agents in 
 
 Say **"delegate to glm"** and it fans out immediately. Your main session (Opus) stays on Anthropic API — Z.AI env vars are injected only into child processes.
 
-## Response format
+## Error codes
 
-Agents respond with a one-sentence summary of what they did. The system prompt enforces scope control — agents modify only the files mentioned in the task and do not add unrequested code.
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | User error (bad args, invalid config) |
+| 3 | Not found (job doesn't exist) |
+| 124 | Timeout |
+| 127 | Dependency missing (claude CLI not found) |
+
+Errors go to stderr in `err:<category> "message"` format for programmatic parsing.
 
 ## Files
 
@@ -139,33 +170,31 @@ Agents respond with a one-sentence summary of what they did. The system prompt e
 
 | Path | Purpose |
 |---|---|
-| `~/.local/bin/glm` | Symlink to cloned `bin/glm` |
+| `~/.local/bin/glm` | Binary or symlink |
 | `~/.claude/CLAUDE.md` | Auto-delegation instructions (between markers) |
-| `~/.config/GoLeM/glm.conf` | Config — models, permissions, parallelism |
+| `~/.config/GoLeM/glm.toml` | Config — models, permissions, parallelism |
 | `~/.config/GoLeM/zai_api_key` | Z.AI API key (chmod 600) |
-| `~/.claude/subagents/<project>/job-*/` | Job results — stdout, changelog, raw JSON |
+| `~/.claude/subagents/<project>/job-*/` | Job artifacts — stdout, stderr, changelog, raw JSON |
 
-**Source layout:**
+**Source layout (Go):**
 
 | Path | Purpose |
 |---|---|
-| `bin/glm` | Entry point (~60 lines): source lib/, dispatch commands |
-| `lib/log.sh` | Logging: info/warn/err/die/debug, exit codes |
-| `lib/config.sh` | Constants, load_config, load_credentials, check_dependencies |
-| `lib/flags.sh` | Unified parse_flags() for all commands |
-| `lib/prompt.sh` | SYSTEM_PROMPT constant |
-| `lib/jobs.sh` | Job lifecycle, project IDs, flock-based slot management |
-| `lib/claude.sh` | Claude env/flags/execution |
-| `lib/changelog.py` | Standalone Python: JSON -> stdout.txt + changelog.txt |
-| `lib/commands/*.sh` | One file per command (run, start, status, etc.) |
-| `tests/` | Test harness + unit tests (bash + python) |
+| `cmd/glm/main.go` | Binary entry point — CLI dispatch, flag parsing, signal handling |
+| `internal/config/` | TOML config loading, env overrides, validation |
+| `internal/cmd/` | Command implementations (run, start, status, list, chain, etc.) |
+| `internal/job/` | Job lifecycle, status state machine, stale recovery |
+| `internal/slot/` | Concurrency control — flock/mkdir locking, PID liveness |
+| `internal/claude/` | Claude subprocess execution, JSON parsing, changelog |
+| `internal/log/` | Structured leveled logging (human + JSON formats) |
+| `internal/exitcode/` | Error taxonomy, exit code mapping |
 
 ## Platforms
 
 | Platform | Status |
 |---|---|
-| Linux | Full |
-| macOS | Full |
+| Linux (amd64, arm64) | Full |
+| macOS (amd64, arm64) | Full |
 | WSL | Full |
 
 ## Audit
@@ -184,10 +213,15 @@ If an agent hits a permission wall, status becomes `permission_error` instead of
 
 ## Troubleshooting
 
+```bash
+glm doctor                         # run all health checks
+glm doctor --json                  # machine-readable output
+```
+
 | Error | Fix |
 |---|---|
 | `claude CLI not found` | Install Claude Code, add to PATH |
-| `credentials not found` | Re-run `install.sh` |
-| `Nested session` error | Update to latest `bin/glm` |
-| Empty output | Check `~/.claude/subagents/job-*/stderr.txt` |
+| `credentials not found` | Run `glm _install` |
+| Empty output | Check `glm result JOB_ID` or `~/.claude/subagents/job-*/stderr.txt` |
 | `~/.local/bin` not in PATH | `export PATH="$HOME/.local/bin:$PATH"` |
+| Jobs stuck in queued | Check `glm doctor` slots, kill stale jobs with `glm clean --days 0` |
