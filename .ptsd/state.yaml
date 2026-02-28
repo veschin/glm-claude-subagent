@@ -2,6 +2,8 @@ features:
   agent-chaining:
     stage: impl
     hashes:
+      bdd: cd251b7ae9c78e77e6b9cafa421438786ad5bccbce6137707740690c6bcd6444
+      test: a5421117d25c1a34a1881eb8f2f2b2e82e67fe9a267e6a5ba184727a0b7a6c28
     scores:
       bdd:
         score: 8
@@ -20,6 +22,8 @@ features:
   claude-execution:
     stage: impl
     hashes:
+      bdd: 0dc1883a73121226c18cbf6c57a6a598d686614a1998390f3f1424396ed8acf0
+      test: 1d89187a076e28eb6da306cf804bdb2b38f6ad2b5902c7d3f9cce0e4b634823b
     scores:
       bdd:
         score: 8
@@ -38,6 +42,8 @@ features:
   concurrency-control:
     stage: impl
     hashes:
+      bdd: 9edbb97537604cfda3a35b845759793b9ce58e7edb45e3be3a0ec2e538798877
+      test: f8d44efe4494d969e706c61842261476da27120116a27c50cbefc07fe3e5d4ac
     scores:
       bdd:
         score: 8
@@ -56,6 +62,8 @@ features:
   config-diagnostics:
     stage: impl
     hashes:
+      bdd: 8e016e133470ec9cf590c8d51d8864620607c424e7513de666483568189eab92
+      test: 3f555ed09edd2da0a5c9fa265e80cd054283b139eee8c8ac4d56f3168cfe53fe
     scores:
       bdd:
         score: 8
@@ -74,6 +82,8 @@ features:
   config-management:
     stage: impl
     hashes:
+      bdd: 9cc8d59ecea05a6782b1b9c14b1eee14a29f2cbf2eda4e2d652a4771bf60501b
+      test: 3f555ed09edd2da0a5c9fa265e80cd054283b139eee8c8ac4d56f3168cfe53fe
       test_results: passed:0 failed:0
       test_status: failing
     scores:
@@ -94,6 +104,8 @@ features:
   core-commands:
     stage: impl
     hashes:
+      bdd: d9e6a2502d43da072eecb047e40e61ef4eb91a57fca69721eec77e753778a58d
+      test: 0dffb79d9c5a8977f9a570b2816038e262fc67111c318655a5616abf3f1f59c4
     scores:
       bdd:
         score: 8
@@ -112,6 +124,8 @@ features:
   cost-tracking:
     stage: impl
     hashes:
+      bdd: af8aaab0bf35deed7b3fd932c75a060ff76d0796257612cce44516bf698bc25f
+      test: 1d89187a076e28eb6da306cf804bdb2b38f6ad2b5902c7d3f9cce0e4b634823b
     scores:
       bdd:
         score: 8
@@ -130,6 +144,8 @@ features:
   error-taxonomy:
     stage: impl
     hashes:
+      bdd: 5a02aad8fdc2c78c738f4c7d637b8d23ea815bf6723ac515b4cadec606c45525
+      test: 039eb28865009bef2e5f6997a3d1bdfc3a7c7788a70f99759c1cb1b60e231b1a
     scores:
       bdd:
         score: 8
@@ -148,6 +164,8 @@ features:
   install-update:
     stage: impl
     hashes:
+      bdd: 8312bb9c40014f9b5628ab08a52be86b347317b0d7779b8cc6f2a032568c7b0d
+      test: 0dffb79d9c5a8977f9a570b2816038e262fc67111c318655a5616abf3f1f59c4
     scores:
       bdd:
         score: 8
@@ -166,6 +184,8 @@ features:
   job-filtering:
     stage: impl
     hashes:
+      bdd: 1bd2c97197e2635ee46451b0d665211266482fe22330caffc4c701f416cf29ec
+      test: 2ebd0089fbb9075e70155805e7f1f12ee62d242bca58a82c612836c0ca59510c
     scores:
       bdd:
         score: 8
@@ -184,6 +204,8 @@ features:
   job-lifecycle:
     stage: impl
     hashes:
+      bdd: 8643a84af738bc9288982be7325e1a6a6b529f1dcefecc6d1cd397743e3e34a4
+      test: adca98a56a175cf68ad67c6d07fae6c5f066e058591436080e1e0b55db62e3d1
     scores:
       bdd:
         score: 8
@@ -202,6 +224,8 @@ features:
   job-management:
     stage: impl
     hashes:
+      bdd: 64b04e67466c12c8fa172129d33ed2568ca329d505c1e6348b96047cd40a6ca7
+      test: 608afe1af10a7ec2e5f77480c37832cc0746d696311bd868f54d36216cd45b8f
     scores:
       bdd:
         score: 8
@@ -220,6 +244,8 @@ features:
   json-output:
     stage: impl
     hashes:
+      bdd: 80e3d64456bc10fd628c44ce0c2978f3e5fa0c9ab28bf97cc88cd66ce7981866
+      test: e1fb686163dcb081b6c302936d0a643bc9317978f28fcb2383b6cb7e3c3d2f17
     scores:
       bdd:
         score: 8
@@ -238,6 +264,8 @@ features:
   multi-provider:
     stage: impl
     hashes:
+      bdd: 0a178d83874b0725801469daf4de760290dece53e7eb544d358c721fc21270cb
+      test: 3f555ed09edd2da0a5c9fa265e80cd054283b139eee8c8ac4d56f3168cfe53fe
     scores:
       bdd:
         score: 8
@@ -256,6 +284,8 @@ features:
   output-streaming:
     stage: impl
     hashes:
+      bdd: 0239fe61f7f3f8a877c03326cac421803f439d303047de66375bc2c4c2db8599
+      test: 1d89187a076e28eb6da306cf804bdb2b38f6ad2b5902c7d3f9cce0e4b634823b
     scores:
       bdd:
         score: 8
@@ -274,6 +304,8 @@ features:
   session-command:
     stage: impl
     hashes:
+      bdd: b3d6dd21d3f14ff3f3b0588e5ae02de2c0e6548d4377cd6bd48c72f6988cf7bd
+      test: d5032d2361545eb60f8ba2273109539f78645e544930a14a9cea119b599699fb
     scores:
       bdd:
         score: 8
@@ -292,6 +324,8 @@ features:
   stale-recovery:
     stage: impl
     hashes:
+      bdd: 53ae559e0556ac7c5badc55d7ffc134df43a095e4c4751e0f84748687c41f313
+      test: aa7d67d77168fd56994d5d3456e73d134f36e43ed2561f3721a589139cf85d7b
     scores:
       bdd:
         score: 8
@@ -310,6 +344,8 @@ features:
   structured-logging:
     stage: impl
     hashes:
+      bdd: 966684b1c9d5b45d9ae5513c8ab1132fbbbaa238abd8c6384f6fd59cc85ca79a
+      test: 95691dc6b4d96bf3f35c59ad2238715d02f6d3a81e93d7a0430b04e0d41d91cb
     scores:
       bdd:
         score: 8
