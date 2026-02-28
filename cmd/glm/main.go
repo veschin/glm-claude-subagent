@@ -21,12 +21,44 @@ import (
 
 const version = "1.0.0"
 
+// logger is the global structured logger, initialized in run().
+var logger *log.Logger
+
 func main() {
 	code := run(os.Args[1:])
 	os.Exit(code)
 }
 
+// initLogger creates the global logger from environment variables.
+func initLogger() *log.Logger {
+	opts := []log.Option{log.WithWriter(os.Stderr)}
+
+	if os.Getenv("GLM_DEBUG") == "1" {
+		opts = append(opts, log.WithLevel(log.LevelDebug))
+	}
+
+	if os.Getenv("GLM_LOG_FORMAT") == "json" {
+		opts = append(opts, log.WithFormat(log.FormatJSON))
+	}
+
+	fi, _ := os.Stderr.Stat()
+	if fi != nil && fi.Mode()&os.ModeCharDevice != 0 {
+		opts = append(opts, log.WithIsTTY(true))
+	}
+
+	if logFile := os.Getenv("GLM_LOG_FILE"); logFile != "" {
+		f, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		if err == nil {
+			opts = append(opts, log.WithFile(f))
+		}
+	}
+
+	return log.New(opts...)
+}
+
 func run(args []string) int {
+	logger = initLogger()
+
 	if len(args) == 0 {
 		usage()
 		return 1
@@ -34,6 +66,8 @@ func run(args []string) int {
 
 	subcmd := args[0]
 	rest := args[1:]
+
+	logger.Debug("command=" + subcmd)
 
 	switch subcmd {
 	case "run":
@@ -118,7 +152,13 @@ func loadConfig() (*config.Config, error) {
 	}
 	configDir := filepath.Join(home, ".config", "GoLeM")
 	subagentDir := filepath.Join(home, ".claude", "subagents")
-	return config.Load(configDir, subagentDir)
+	logger.Debug("config_dir=" + configDir)
+	cfg, err := config.Load(configDir, subagentDir)
+	if err != nil {
+		return nil, err
+	}
+	logger.Debug(fmt.Sprintf("model=%s max_parallel=%d", cfg.Model, cfg.MaxParallel))
+	return cfg, nil
 }
 
 // resolveProjectID determines the project ID from the working directory.
@@ -155,6 +195,17 @@ func hasFlag(args []string, flag string) bool {
 		}
 	}
 	return false
+}
+
+// stripFlag removes a boolean flag from args and returns the cleaned slice.
+func stripFlag(args []string, flag string) []string {
+	result := make([]string, 0, len(args))
+	for _, a := range args {
+		if a != flag {
+			result = append(result, a)
+		}
+	}
+	return result
 }
 
 // getFlagValue returns the value of a flag and remaining args, or empty string.
@@ -317,12 +368,14 @@ func cmdStart(args []string) int {
 }
 
 func cmdStatus(args []string) int {
+	jsonMode := hasFlag(args, "--json")
+	args = stripFlag(args, "--json")
+
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, `err:user "No job ID provided"`)
 		return exitcode.UserError
 	}
 
-	jsonMode := hasFlag(args, "--json")
 	jobID := args[0]
 
 	cfg, err := loadConfig()
@@ -348,12 +401,14 @@ func cmdStatus(args []string) int {
 }
 
 func cmdResult(args []string) int {
+	jsonMode := hasFlag(args, "--json")
+	args = stripFlag(args, "--json")
+
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, `err:user "No job ID provided"`)
 		return exitcode.UserError
 	}
 
-	jsonMode := hasFlag(args, "--json")
 	jobID := args[0]
 
 	cfg, err := loadConfig()
@@ -379,12 +434,14 @@ func cmdResult(args []string) int {
 }
 
 func cmdLog(args []string) int {
+	jsonMode := hasFlag(args, "--json")
+	args = stripFlag(args, "--json")
+
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, `err:user "No job ID provided"`)
 		return exitcode.UserError
 	}
 
-	jsonMode := hasFlag(args, "--json")
 	jobID := args[0]
 
 	cfg, err := loadConfig()
@@ -416,34 +473,34 @@ func cmdList(args []string) int {
 		return die(err)
 	}
 
+	// Parse filter options (shared between JSON and text modes).
+	var filter cmd.FilterOptions
+	statusRaw, args := getFlagValue(args, "--status")
+	if statusRaw != "" {
+		statuses, parseErr := cmd.ParseStatusFilter(statusRaw)
+		if parseErr != nil {
+			return die(parseErr)
+		}
+		filter.Statuses = statuses
+	}
+
+	sinceRaw, _ := getFlagValue(args, "--since")
+	if sinceRaw != "" {
+		since, parseErr := cmd.ParseSinceFilter(sinceRaw, time.Now)
+		if parseErr != nil {
+			return die(parseErr)
+		}
+		filter.Since = since
+	}
+
 	if jsonMode {
-		// Parse filter options.
-		var filter cmd.FilterOptions
-		statusRaw, args := getFlagValue(args, "--status")
-		if statusRaw != "" {
-			statuses, parseErr := cmd.ParseStatusFilter(statusRaw)
-			if parseErr != nil {
-				return die(parseErr)
-			}
-			filter.Statuses = statuses
-		}
-
-		sinceRaw, _ := getFlagValue(args, "--since")
-		if sinceRaw != "" {
-			since, parseErr := cmd.ParseSinceFilter(sinceRaw, time.Now)
-			if parseErr != nil {
-				return die(parseErr)
-			}
-			filter.Since = since
-		}
-
 		if err := cmd.ListJSON(cfg.SubagentDir, &filter, os.Stdout); err != nil {
 			return die(err)
 		}
 		return 0
 	}
 
-	if err := cmd.ListCmd(cfg.SubagentDir, os.Stdout); err != nil {
+	if err := cmd.ListCmd(cfg.SubagentDir, os.Stdout, &filter); err != nil {
 		return die(err)
 	}
 	return 0

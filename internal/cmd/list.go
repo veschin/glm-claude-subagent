@@ -29,7 +29,11 @@ type JobEntry struct {
 // Running jobs whose PID is no longer alive are updated to "failed".
 // Missing status files are reported as "unknown".
 // When there are no jobs nothing is written.
-func ListCmd(subagentsRoot string, w io.Writer) error {
+func ListCmd(subagentsRoot string, w io.Writer, opts ...*FilterOptions) error {
+	var filter *FilterOptions
+	if len(opts) > 0 {
+		filter = opts[0]
+	}
 	entries, err := os.ReadDir(subagentsRoot)
 	if err != nil {
 		// If root doesn't exist, nothing to show.
@@ -98,6 +102,15 @@ func ListCmd(subagentsRoot string, w io.Writer) error {
 			newStatus, _ := job.CheckJobPID(jobs[i].Dir)
 			jobs[i].Status = newStatus
 		}
+	}
+
+	// Apply filters if provided.
+	if filter != nil {
+		jobs = FilterJobs(jobs, filter)
+	}
+
+	if len(jobs) == 0 {
+		return nil
 	}
 
 	// Sort newest-first (nil StartedAt sorts last).
