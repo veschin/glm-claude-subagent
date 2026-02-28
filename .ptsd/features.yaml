@@ -1,55 +1,55 @@
 features:
   - id: config-management
     title: "Configuration Management"
-    status: planned
+    status: implemented
   - id: job-lifecycle
     title: "Job Lifecycle"
-    status: in-progress
+    status: implemented
   - id: concurrency-control
     title: "Concurrency Control"
-    status: planned
+    status: implemented
   - id: claude-execution
     title: "Claude Execution Engine"
-    status: planned
+    status: implemented
   - id: core-commands
     title: "Core Commands"
-    status: planned
+    status: implemented
   - id: job-management
     title: "Job Management Commands"
-    status: planned
+    status: implemented
   - id: session-command
     title: "Session Command"
-    status: planned
+    status: implemented
   - id: install-update
     title: "Install Uninstall Update"
-    status: planned
+    status: implemented
   - id: stale-recovery
     title: "Stale Job Recovery"
-    status: planned
+    status: implemented
   - id: structured-logging
     title: "Structured Logging"
-    status: planned
+    status: implemented
   - id: error-taxonomy
     title: "Error Taxonomy"
-    status: planned
+    status: implemented
   - id: json-output
     title: "JSON Output Mode"
-    status: planned
+    status: implemented
   - id: job-filtering
     title: "Job Filtering"
-    status: planned
+    status: implemented
   - id: config-diagnostics
     title: "Config Validation and Diagnostics"
-    status: planned
+    status: implemented
   - id: output-streaming
     title: "Output Streaming"
-    status: planned
+    status: implemented
   - id: agent-chaining
     title: "Agent Chaining"
-    status: planned
+    status: implemented
   - id: multi-provider
     title: "Multi-Provider Support"
-    status: planned
+    status: implemented
   - id: cost-tracking
     title: "Cost Token Tracking"
-    status: planned
+    status: implemented

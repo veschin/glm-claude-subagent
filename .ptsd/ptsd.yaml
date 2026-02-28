@@ -2,6 +2,7 @@ project:
   name: "GoLeM"
 
 testing:
+  runner: "go test -v -count=1"
   patterns:
     files: ["**/*_test.go"]
 

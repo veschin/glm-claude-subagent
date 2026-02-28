@@ -1,91 +1,91 @@
 features:
   agent-chaining:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   claude-execution:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   concurrency-control:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   config-diagnostics:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   config-management:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   core-commands:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   cost-tracking:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   error-taxonomy:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   install-update:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   job-filtering:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   job-lifecycle:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   job-management:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   json-output:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   multi-provider:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   output-streaming:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   session-command:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0
   stale-recovery:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: written
     review: passed
     issues: 0
   structured-logging:
-    stage: bdd
-    tests: absent
+    stage: impl
+    tests: passing
     review: passed
     issues: 0

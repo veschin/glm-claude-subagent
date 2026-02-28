@@ -1,6 +1,6 @@
 features:
   agent-chaining:
-    stage: bdd
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -12,8 +12,13 @@ features:
       seed:
         score: 7
         at: "2026-02-27T21:13:33.905357627+03:00"
+      tests:
+        score: 8
+        at: "2026-02-28T13:48:21.916769456+03:00"
+    tests:
+      - .ptsd/bdd/agent-chaining.feature::internal/cmd/chain_test.go
   claude-execution:
-    stage: bdd
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -25,8 +30,13 @@ features:
       seed:
         score: 7
         at: "2026-02-27T21:13:33.901201838+03:00"
+      tests:
+        score: 8
+        at: "2026-02-28T13:48:12.071904134+03:00"
+    tests:
+      - .ptsd/bdd/claude-execution.feature::internal/claude/claude_test.go
   concurrency-control:
-    stage: bdd
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -38,8 +48,13 @@ features:
       seed:
         score: 7
         at: "2026-02-27T21:07:40.970751173+03:00"
+      tests:
+        score: 8
+        at: "2026-02-28T13:48:11.580015208+03:00"
+    tests:
+      - .ptsd/bdd/concurrency-control.feature::internal/slot/slot_test.go
   config-diagnostics:
-    stage: bdd
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -51,9 +66,16 @@ features:
       seed:
         score: 7
         at: "2026-02-27T21:13:33.904509743+03:00"
+      tests:
+        score: 8
+        at: "2026-02-28T13:48:18.356536445+03:00"
+    tests:
+      - .ptsd/bdd/config-diagnostics.feature::internal/config/config_test.go
   config-management:
-    stage: tests
+    stage: impl
     hashes:
+      test_results: passed:0 failed:0
+      test_status: failing
     scores:
       bdd:
         score: 8
@@ -65,10 +87,12 @@ features:
         score: 8
         at: "2026-02-27T21:03:04.205557366+03:00"
       tests:
-        score: 7
-        at: "2026-02-27T21:42:48.289188361+03:00"
+        score: 8
+        at: "2026-02-28T13:48:07.335555474+03:00"
+    tests:
+      - .ptsd/bdd/config-management.feature::internal/config/config_test.go
   core-commands:
-    stage: bdd
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -80,8 +104,13 @@ features:
       seed:
         score: 7
         at: "2026-02-27T21:07:40.971640646+03:00"
+      tests:
+        score: 8
+        at: "2026-02-28T13:48:12.542928674+03:00"
+    tests:
+      - .ptsd/bdd/core-commands.feature::internal/cmd/cmd_test.go
   cost-tracking:
-    stage: bdd
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -93,8 +122,13 @@ features:
       seed:
         score: 8
         at: "2026-02-27T21:07:40.976105488+03:00"
+      tests:
+        score: 8
+        at: "2026-02-28T13:48:22.86968135+03:00"
+    tests:
+      - .ptsd/bdd/cost-tracking.feature::internal/claude/claude_test.go
   error-taxonomy:
-    stage: tests
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -107,10 +141,12 @@ features:
         score: 7
         at: "2026-02-27T21:07:40.973946353+03:00"
       tests:
-        score: 7
-        at: "2026-02-27T21:42:48.290913906+03:00"
+        score: 8
+        at: "2026-02-28T13:48:16.917982801+03:00"
+    tests:
+      - .ptsd/bdd/error-taxonomy.feature::internal/exitcode/exitcode_test.go
   install-update:
-    stage: bdd
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -122,8 +158,13 @@ features:
       seed:
         score: 7
         at: "2026-02-27T21:13:33.902922874+03:00"
+      tests:
+        score: 8
+        at: "2026-02-28T13:48:13.530234715+03:00"
+    tests:
+      - .ptsd/bdd/install-update.feature::internal/cmd/cmd_test.go
   job-filtering:
-    stage: bdd
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -135,8 +176,13 @@ features:
       seed:
         score: 8
         at: "2026-02-27T21:07:40.97469171+03:00"
+      tests:
+        score: 8
+        at: "2026-02-28T13:48:17.84800511+03:00"
+    tests:
+      - .ptsd/bdd/job-filtering.feature::internal/cmd/filter_test.go
   job-lifecycle:
-    stage: tests
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -149,12 +195,12 @@ features:
         score: 7
         at: "2026-02-28T09:17:27.094516357+03:00"
       tests:
-        score: 7
-        at: "2026-02-27T21:42:48.291705602+03:00"
+        score: 8
+        at: "2026-02-28T13:48:23.741574547+03:00"
     tests:
       - .ptsd/bdd/job-lifecycle.feature::internal/job/job_test.go
   job-management:
-    stage: tests
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -167,10 +213,12 @@ features:
         score: 7
         at: "2026-02-27T21:07:40.972495093+03:00"
       tests:
-        score: 7
-        at: "2026-02-27T21:42:48.293462257+03:00"
+        score: 8
+        at: "2026-02-28T13:48:23.2612164+03:00"
+    tests:
+      - .ptsd/bdd/job-management.feature::internal/cmd/management_test.go
   json-output:
-    stage: bdd
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -182,8 +230,13 @@ features:
       seed:
         score: 7
         at: "2026-02-27T21:13:33.903726042+03:00"
+      tests:
+        score: 8
+        at: "2026-02-28T13:48:17.382185993+03:00"
+    tests:
+      - .ptsd/bdd/json-output.feature::internal/cmd/json_test.go
   multi-provider:
-    stage: bdd
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -195,8 +248,13 @@ features:
       seed:
         score: 7
         at: "2026-02-27T21:13:33.906097675+03:00"
+      tests:
+        score: 8
+        at: "2026-02-28T13:48:22.478331364+03:00"
+    tests:
+      - .ptsd/bdd/multi-provider.feature::internal/config/config_test.go
   output-streaming:
-    stage: bdd
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -208,8 +266,13 @@ features:
       seed:
         score: 7
         at: "2026-02-27T21:07:40.975398053+03:00"
+      tests:
+        score: 8
+        at: "2026-02-28T13:48:18.856173923+03:00"
+    tests:
+      - .ptsd/bdd/output-streaming.feature::internal/claude/claude_test.go
   session-command:
-    stage: bdd
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -221,8 +284,13 @@ features:
       seed:
         score: 7
         at: "2026-02-27T21:13:33.902068998+03:00"
+      tests:
+        score: 8
+        at: "2026-02-28T13:48:13.026619435+03:00"
+    tests:
+      - .ptsd/bdd/session-command.feature::internal/cmd/session_test.go
   stale-recovery:
-    stage: tests
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -235,10 +303,12 @@ features:
         score: 7
         at: "2026-02-27T21:07:40.973280177+03:00"
       tests:
-        score: 7
-        at: "2026-02-27T21:42:48.292538507+03:00"
+        score: 8
+        at: "2026-02-28T13:48:14.040230445+03:00"
+    tests:
+      - .ptsd/bdd/stale-recovery.feature::internal/job/reconcile_test.go
   structured-logging:
-    stage: tests
+    stage: impl
     hashes:
     scores:
       bdd:
@@ -251,5 +321,7 @@ features:
         score: 7
         at: "2026-02-27T21:13:33.906813065+03:00"
       tests:
-        score: 7
-        at: "2026-02-27T21:42:48.290104666+03:00"
+        score: 8
+        at: "2026-02-28T13:48:16.424232299+03:00"
+    tests:
+      - .ptsd/bdd/structured-logging.feature::internal/log/log_test.go
