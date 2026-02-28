@@ -71,6 +71,9 @@ func writeSlotCounterFile(t *testing.T, counterPath string, n int) {
 // selfPID returns the current process PID — guaranteed to be alive.
 func selfPID() int { return os.Getpid() }
 
+// deadPID returns a PID that is guaranteed to be dead — near pid_max.
+func deadPID() int { return 4194200 }
+
 // ---------------------------------------------------------------------------
 // AC1: Reconciliation runs once at startup
 // ---------------------------------------------------------------------------
@@ -82,7 +85,7 @@ func TestReconciliationRunsOnceAtStartup(t *testing.T) {
 	counterPath := filepath.Join(base, ".running_count")
 	writeSlotCounterFile(t, counterPath, 2)
 
-	deadDir := makeJob(t, base, "job-20260227-080000-dead1234", "running", 99999, "", false)
+	deadDir := makeJob(t, base, "job-20260227-080000-dead1234", "running", deadPID(), "", false)
 	aliveDir := makeJob(t, base, "job-20260227-080100-alive567", "running", selfPID(), "", false)
 
 	now := time.Date(2026, 2, 27, 8, 5, 0, 0, time.UTC)
@@ -109,7 +112,7 @@ func TestReconciliationRunsOnceAtStartup(t *testing.T) {
 // pid.txt points to a non-existent PID is transitioned to "failed".
 func TestRunningJobWithDeadPIDIsDetectedAsStale(t *testing.T) {
 	base := t.TempDir()
-	jobDir := makeJob(t, base, "job-20260227-080000-dead1234", "running", 99999, "", false)
+	jobDir := makeJob(t, base, "job-20260227-080000-dead1234", "running", deadPID(), "", false)
 
 	now := time.Now()
 	if err := Reconcile(base, now); err != nil {
@@ -192,7 +195,7 @@ func TestQueuedJobUnder5MinutesIsNotStale(t *testing.T) {
 // correct message to stderr.txt when a running job has a dead PID.
 func TestDeadPIDJobGetsStderrAnnotation(t *testing.T) {
 	base := t.TempDir()
-	jobDir := makeJob(t, base, "job-20260227-080000-dead1234", "running", 99999, "", false)
+	jobDir := makeJob(t, base, "job-20260227-080000-dead1234", "running", deadPID(), "", false)
 
 	now := time.Now()
 	if err := Reconcile(base, now); err != nil {
@@ -203,7 +206,7 @@ func TestDeadPIDJobGetsStderrAnnotation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("stderr.txt not created: %v", err)
 	}
-	want := "[GoLeM] Process died unexpectedly (PID 99999)"
+	want := "[GoLeM] Process died unexpectedly (PID " + strconv.Itoa(deadPID()) + ")"
 	if !strings.Contains(string(data), want) {
 		t.Errorf("stderr.txt = %q, want to contain %q", string(data), want)
 	}
@@ -246,7 +249,7 @@ func TestSlotCounterIsResetAfterReconciliation(t *testing.T) {
 	counterPath := filepath.Join(base, ".running_count")
 	writeSlotCounterFile(t, counterPath, 5)
 
-	makeJob(t, base, "job-20260227-080000-dead1234", "running", 99999, "", false)
+	makeJob(t, base, "job-20260227-080000-dead1234", "running", deadPID(), "", false)
 	makeJob(t, base, "job-20260227-080100-alive567", "running", selfPID(), "", false)
 	makeJob(t, base, "job-20260227-070000-stuck890", "queued", 0, "2026-02-27T07:00:00+03:00", false)
 	makeJob(t, base, "job-20260227-090000-nopid000", "running", 0, "", false)
@@ -269,9 +272,9 @@ func TestAllStaleJobsResultInCounterResetToZero(t *testing.T) {
 	counterPath := filepath.Join(base, ".running_count")
 	writeSlotCounterFile(t, counterPath, 3)
 
-	makeJob(t, base, "job-20260227-080000-stale1", "running", 99997, "", false)
-	makeJob(t, base, "job-20260227-080001-stale2", "running", 99998, "", false)
-	makeJob(t, base, "job-20260227-080002-stale3", "running", 99999, "", false)
+	makeJob(t, base, "job-20260227-080000-stale1", "running", deadPID(), "", false)
+	makeJob(t, base, "job-20260227-080001-stale2", "running", deadPID(), "", false)
+	makeJob(t, base, "job-20260227-080002-stale3", "running", deadPID(), "", false)
 
 	now := time.Now()
 	if err := Reconcile(base, now); err != nil {
@@ -294,9 +297,9 @@ func TestAllStaleJobsResultInCounterResetToZero(t *testing.T) {
 func TestStatusCommandChecksIndividualJobPIDWithoutFullReconciliation(t *testing.T) {
 	base := t.TempDir()
 	// Second job that should NOT be touched by CheckJobPID.
-	untouchedDir := makeJob(t, base, "job-unrelated-should-not-change", "running", 99998, "", false)
+	untouchedDir := makeJob(t, base, "job-unrelated-should-not-change", "running", deadPID(), "", false)
 
-	jobDir := makeJob(t, base, "job-20260227-080000-dead1234", "running", 99999, "", false)
+	jobDir := makeJob(t, base, "job-20260227-080000-dead1234", "running", deadPID(), "", false)
 
 	status, err := CheckJobPID(jobDir)
 	if err != nil {
