@@ -4,7 +4,7 @@ features:
     status: planned
   - id: job-lifecycle
     title: "Job Lifecycle"
-    status: planned
+    status: in-progress
   - id: concurrency-control
     title: "Concurrency Control"
     status: planned

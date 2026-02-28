@@ -2,45 +2,45 @@ tasks:
   - id: T-1
     feature: job-lifecycle
     title: redo seed for job-lifecycle
-    status: TODO
+    status: DONE
     priority: A
   - id: T-2
     feature: claude-execution
     title: redo seed for claude-execution
-    status: TODO
+    status: DONE
     priority: A
   - id: T-3
     feature: session-command
     title: redo seed for session-command
-    status: TODO
+    status: DONE
     priority: A
   - id: T-4
     feature: install-update
     title: redo seed for install-update
-    status: TODO
+    status: DONE
     priority: A
   - id: T-5
     feature: json-output
     title: redo seed for json-output
-    status: TODO
+    status: DONE
     priority: A
   - id: T-6
     feature: config-diagnostics
     title: redo seed for config-diagnostics
-    status: TODO
+    status: DONE
     priority: A
   - id: T-7
     feature: agent-chaining
     title: redo seed for agent-chaining
-    status: TODO
+    status: DONE
     priority: A
   - id: T-8
     feature: multi-provider
     title: redo seed for multi-provider
-    status: TODO
+    status: DONE
     priority: A
   - id: T-9
     feature: structured-logging
     title: redo seed for structured-logging
-    status: TODO
+    status: DONE
     priority: A
