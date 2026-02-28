@@ -717,21 +717,23 @@ func cmdUpdate() int {
 		return die(err)
 	}
 
+	configDir := filepath.Join(home, ".config", "GoLeM")
+
 	// Determine clone directory (where GoLeM source lives).
 	execPath, err := os.Executable()
 	if err != nil {
 		return die(fmt.Errorf(`err:user "Cannot determine executable path"`))
 	}
-	// Resolve symlinks to find actual source directory.
 	realPath, err := filepath.EvalSymlinks(execPath)
 	if err != nil {
 		realPath = execPath
 	}
-	cloneDir := filepath.Dir(filepath.Dir(realPath)) // go up from cmd/glm/
+	cloneDir := filepath.Dir(filepath.Dir(realPath))
 
 	claudeMDPath := filepath.Join(home, ".claude", "CLAUDE.md")
 
 	opts := cmd.UpdateOptions{
+		ConfigDir:    configDir,
 		CloneDir:     cloneDir,
 		ClaudeMDPath: claudeMDPath,
 		Out:          os.Stdout,
@@ -796,9 +798,17 @@ func cmdInstall() int {
 		return die(err)
 	}
 
+	// Determine clone directory. For source installs the binary lives inside
+	// the repo (e.g. ~/GoLeM/glm). For go-install the binary is in
+	// $GOPATH/bin and cloneDir will not contain .git — InstallCmd detects this.
 	execPath, _ := os.Executable()
 	realPath, _ := filepath.EvalSymlinks(execPath)
 	cloneDir := filepath.Dir(filepath.Dir(realPath))
+
+	// If cloneDir doesn't contain .git, it's a go-install — pass empty.
+	if _, err := os.Stat(filepath.Join(cloneDir, ".git")); err != nil {
+		cloneDir = ""
+	}
 
 	opts := cmd.InstallOptions{
 		CloneDir:     cloneDir,
@@ -806,6 +816,7 @@ func cmdInstall() int {
 		ConfigDir:    filepath.Join(home, ".config", "GoLeM"),
 		ClaudeMDPath: filepath.Join(home, ".claude", "CLAUDE.md"),
 		SubagentsDir: filepath.Join(home, ".claude", "subagents"),
+		Version:      version,
 		In:           os.Stdin,
 		Out:          os.Stdout,
 	}

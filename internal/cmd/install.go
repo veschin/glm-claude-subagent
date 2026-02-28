@@ -17,6 +17,7 @@ import (
 type InstallOptions struct {
 	// CloneDir is the directory where GoLeM source lives (used as binary source
 	// for symlink creation and for re-reading the CLAUDE.md template on update).
+	// Empty for go-install mode.
 	CloneDir string
 	// BinDir is the directory where the "glm" symlink is placed (default: ~/.local/bin).
 	BinDir string
@@ -26,6 +27,8 @@ type InstallOptions struct {
 	ClaudeMDPath string
 	// SubagentsDir is the subagents directory (default: ~/.claude/subagents).
 	SubagentsDir string
+	// Version is the current glm version string (e.g. "1.0.0").
+	Version string
 	// In is the reader used for interactive prompts (defaults to os.Stdin).
 	In io.Reader
 	// Out is the writer used for prompt output (defaults to os.Stdout).
@@ -69,12 +72,13 @@ func promptYN(in io.Reader, out io.Writer, message string) (bool, error) {
 }
 
 // InstallCmd runs the interactive glm _install flow:
-//  1. Prompts for Z.AI API key (saves to ConfigDir/zai_api_key, mode 0600).
-//  2. Prompts for permission mode (saves to ConfigDir/glm.toml).
-//  3. Writes ConfigDir/config.json with metadata.
-//  4. Creates a symlink at BinDir/glm pointing to CloneDir/glm binary.
-//  5. Injects the GLM subagent section into ClaudeMDPath (idempotent).
-//  6. Creates SubagentsDir.
+//  1. Migrates legacy API key from ~/.config/zai/env if present.
+//  2. Prompts for Z.AI API key (saves to ConfigDir/zai_api_key, mode 0600).
+//  3. Prompts for permission mode (saves to ConfigDir/glm.toml).
+//  4. Writes ConfigDir/config.json with metadata.
+//  5. Creates a symlink at BinDir/glm (only for clone-based installs).
+//  6. Injects the GLM subagent section into ClaudeMDPath (idempotent).
+//  7. Creates SubagentsDir.
 func InstallCmd(opts InstallOptions) error {
 	in := opts.In
 	if in == nil {
@@ -90,16 +94,23 @@ func InstallCmd(opts InstallOptions) error {
 		return fmt.Errorf("create config dir: %w", err)
 	}
 
-	// Step 1: API key.
+	// Step 1: API key — check existing, try legacy migration, then prompt.
 	apiKeyPath := filepath.Join(opts.ConfigDir, "zai_api_key")
 	apiKeyExists := false
 	if _, err := os.Stat(apiKeyPath); err == nil {
 		apiKeyExists = true
 	}
 
+	// Try legacy migration from ~/.config/zai/env if no key exists yet.
+	if !apiKeyExists {
+		if migrated := migrateLegacyAPIKey(apiKeyPath, out); migrated {
+			apiKeyExists = true
+		}
+	}
+
 	writeKey := true
 	if apiKeyExists {
-		overwrite, err := promptYN(in, out, "Z.AI API key already exists. Overwrite with a new key? [y/N]: ")
+		overwrite, err := promptYN(in, out, "Z.AI API key already exists. Overwrite? [y/N]: ")
 		if err != nil {
 			return fmt.Errorf("read overwrite prompt: %w", err)
 		}
@@ -110,6 +121,10 @@ func InstallCmd(opts InstallOptions) error {
 		apiKey, err := prompt(in, out, "Enter Z.AI API key: ")
 		if err != nil {
 			return fmt.Errorf("read API key: %w", err)
+		}
+		apiKey = strings.TrimSpace(apiKey)
+		if apiKey == "" {
+			return fmt.Errorf(`err:user "API key cannot be empty"`)
 		}
 		if err := os.WriteFile(apiKeyPath, []byte(apiKey), 0o600); err != nil {
 			return fmt.Errorf("write API key: %w", err)
@@ -136,12 +151,22 @@ func InstallCmd(opts InstallOptions) error {
 	type configMeta struct {
 		InstalledAt string `json:"installed_at"`
 		Version     string `json:"version"`
-		CloneDir    string `json:"clone_dir"`
+		InstallMode string `json:"install_mode"`
+		CloneDir    string `json:"clone_dir,omitempty"`
+	}
+	installMode := "go-install"
+	if opts.CloneDir != "" {
+		if _, err := os.Stat(filepath.Join(opts.CloneDir, ".git")); err == nil {
+			installMode = "source"
+		}
 	}
 	meta := configMeta{
 		InstalledAt: time.Now().UTC().Format(time.RFC3339),
-		Version:     "0.1.0",
-		CloneDir:    opts.CloneDir,
+		Version:     opts.Version,
+		InstallMode: installMode,
+	}
+	if installMode == "source" {
+		meta.CloneDir = opts.CloneDir
 	}
 	metaJSON, err := json.MarshalIndent(meta, "", "  ")
 	if err != nil {
@@ -152,55 +177,14 @@ func InstallCmd(opts InstallOptions) error {
 		return fmt.Errorf("write config.json: %w", err)
 	}
 
-	// Step 4: Create symlink at BinDir/glm → CloneDir/glm binary.
-	if err := os.MkdirAll(opts.BinDir, 0o755); err != nil {
-		return fmt.Errorf("create bin dir: %w", err)
-	}
-
-	glmBinary := filepath.Join(opts.CloneDir, "glm")
-	symlinkPath := filepath.Join(opts.BinDir, "glm")
-
-	// Check if something already exists at symlink path.
-	fi, statErr := os.Lstat(symlinkPath)
-	if statErr == nil {
-		// Something exists — check if it's a symlink or a regular file.
-		if fi.Mode()&os.ModeSymlink == 0 {
-			// Regular file — prompt before replacing.
-			replace, err := promptYN(in, out, fmt.Sprintf("A regular file exists at %s. Replace with symlink? [y/N]: ", symlinkPath))
-			if err != nil {
-				return fmt.Errorf("read replace prompt: %w", err)
-			}
-			if replace {
-				if err := os.Remove(symlinkPath); err != nil {
-					return fmt.Errorf("remove existing binary: %w", err)
-				}
-			}
-		} else {
-			// Already a symlink — remove it and re-create.
-			if err := os.Remove(symlinkPath); err != nil {
-				return fmt.Errorf("remove existing symlink: %w", err)
-			}
+	// Step 4: Symlink — only for source/clone-based installs.
+	// For go-install, the binary is already in $GOPATH/bin which is in PATH.
+	if installMode == "source" {
+		if err := createSymlink(opts.CloneDir, opts.BinDir, in, out); err != nil {
+			return err
 		}
-	}
-
-	// Create symlink (only if the path is now free).
-	if _, err := os.Lstat(symlinkPath); os.IsNotExist(err) {
-		if err := os.Symlink(glmBinary, symlinkPath); err != nil {
-			return fmt.Errorf("create symlink: %w", err)
-		}
-	}
-
-	// Warn if BinDir is not in PATH.
-	path := os.Getenv("PATH")
-	inPath := false
-	for _, p := range strings.Split(path, ":") {
-		if p == opts.BinDir {
-			inPath = true
-			break
-		}
-	}
-	if !inPath {
-		fmt.Fprintf(out, "Warning: %s is not in PATH. Add it to your shell profile.\n", opts.BinDir)
+	} else {
+		fmt.Fprintf(out, "Binary: %s (via go install)\n", glmExecutablePath())
 	}
 
 	// Step 5: Inject GLM section into CLAUDE.md.
@@ -216,6 +200,97 @@ func InstallCmd(opts InstallOptions) error {
 
 	fmt.Fprintln(out, "GoLeM installed successfully.")
 	return nil
+}
+
+// migrateLegacyAPIKey copies the API key from ~/.config/zai/env to the new
+// location if it exists. Returns true if migration succeeded.
+func migrateLegacyAPIKey(destPath string, out io.Writer) bool {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return false
+	}
+	legacyPath := filepath.Join(home, ".config", "zai", "env")
+	data, err := os.ReadFile(legacyPath)
+	if err != nil {
+		return false
+	}
+	key := strings.TrimSpace(string(data))
+	// Handle ZAI_API_KEY="value" format.
+	if strings.HasPrefix(key, `ZAI_API_KEY="`) && strings.HasSuffix(key, `"`) {
+		key = strings.TrimPrefix(key, `ZAI_API_KEY="`)
+		key = strings.TrimSuffix(key, `"`)
+	}
+	if key == "" {
+		return false
+	}
+	if err := os.WriteFile(destPath, []byte(key), 0o600); err != nil {
+		return false
+	}
+	fmt.Fprintf(out, "Migrated API key from %s\n", legacyPath)
+	return true
+}
+
+// createSymlink creates a symlink at BinDir/glm pointing to the binary
+// in CloneDir. Handles existing files/symlinks with prompts.
+func createSymlink(cloneDir, binDir string, in io.Reader, out io.Writer) error {
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		return fmt.Errorf("create bin dir: %w", err)
+	}
+
+	glmBinary := filepath.Join(cloneDir, "glm")
+	symlinkPath := filepath.Join(binDir, "glm")
+
+	fi, statErr := os.Lstat(symlinkPath)
+	if statErr == nil {
+		if fi.Mode()&os.ModeSymlink == 0 {
+			replace, err := promptYN(in, out, fmt.Sprintf("A regular file exists at %s. Replace with symlink? [y/N]: ", symlinkPath))
+			if err != nil {
+				return fmt.Errorf("read replace prompt: %w", err)
+			}
+			if replace {
+				if err := os.Remove(symlinkPath); err != nil {
+					return fmt.Errorf("remove existing binary: %w", err)
+				}
+			}
+		} else {
+			if err := os.Remove(symlinkPath); err != nil {
+				return fmt.Errorf("remove existing symlink: %w", err)
+			}
+		}
+	}
+
+	if _, err := os.Lstat(symlinkPath); os.IsNotExist(err) {
+		if err := os.Symlink(glmBinary, symlinkPath); err != nil {
+			return fmt.Errorf("create symlink: %w", err)
+		}
+	}
+
+	// Warn if BinDir is not in PATH.
+	pathEnv := os.Getenv("PATH")
+	inPath := false
+	for _, p := range strings.Split(pathEnv, ":") {
+		if p == binDir {
+			inPath = true
+			break
+		}
+	}
+	if !inPath {
+		fmt.Fprintf(out, "Warning: %s is not in PATH. Add it to your shell profile.\n", binDir)
+	}
+	return nil
+}
+
+// glmExecutablePath returns the path to the currently running glm binary.
+func glmExecutablePath() string {
+	p, err := os.Executable()
+	if err != nil {
+		return "glm"
+	}
+	real, err := filepath.EvalSymlinks(p)
+	if err != nil {
+		return p
+	}
+	return real
 }
 
 // loadGLMTemplate reads the GLM section from CloneDir's CLAUDE.md global
@@ -261,7 +336,7 @@ type UninstallOptions struct {
 }
 
 // UninstallCmd runs the interactive glm _uninstall flow:
-//  1. Removes the symlink at BinDir/glm.
+//  1. Removes the symlink at BinDir/glm (source installs only).
 //  2. Removes the GLM section from ClaudeMDPath (leaves other content).
 //  3. Prompts before removing ConfigDir/zai_api_key.
 //  4. Prompts before removing SubagentsDir.
@@ -276,10 +351,15 @@ func UninstallCmd(opts UninstallOptions) error {
 		out = os.Stdout
 	}
 
-	// Step 1: Remove the symlink at BinDir/glm.
+	// Step 1: Remove the symlink at BinDir/glm (only for source installs).
+	installMode := readInstallMode(opts.ConfigDir)
 	symlinkPath := filepath.Join(opts.BinDir, "glm")
-	if err := os.Remove(symlinkPath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("remove symlink: %w", err)
+	if installMode == "source" {
+		if err := os.Remove(symlinkPath); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove symlink: %w", err)
+		}
+	} else {
+		fmt.Fprintf(out, "Installed via go install — remove binary manually if needed: %s\n", glmExecutablePath())
 	}
 
 	// Step 2: Remove GLM section from CLAUDE.md.
@@ -321,7 +401,9 @@ func UninstallCmd(opts UninstallOptions) error {
 
 // UpdateOptions configures the update command.
 type UpdateOptions struct {
-	// CloneDir is the git repository to update.
+	// ConfigDir is the GoLeM config directory (for reading config.json install_mode).
+	ConfigDir string
+	// CloneDir is the git repository to update (only used for source installs).
 	CloneDir string
 	// ClaudeMDPath is the CLAUDE.md to re-inject after pulling.
 	ClaudeMDPath string
@@ -332,11 +414,17 @@ type UpdateOptions struct {
 }
 
 // UpdateCmd implements glm update:
+//
+// For source installs:
 //  1. Validates CloneDir is a git repository.
 //  2. Records the current HEAD revision.
 //  3. Runs "git pull --ff-only".
 //  4. Displays old→new revisions and the commit log between them.
 //  5. Re-injects the GLM section into ClaudeMDPath.
+//
+// For go-install:
+//  1. Runs "go install github.com/veschin/GoLeM/cmd/glm@latest".
+//  2. Re-injects the GLM section into ClaudeMDPath.
 func UpdateCmd(opts UpdateOptions) error {
 	out := opts.Out
 	if out == nil {
@@ -347,21 +435,32 @@ func UpdateCmd(opts UpdateOptions) error {
 		errOut = os.Stderr
 	}
 
-	// Step 1: Validate CloneDir is a git repository.
-	gitDir := filepath.Join(opts.CloneDir, ".git")
-	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
-		return fmt.Errorf("err:user %q is not a git repository", opts.CloneDir)
+	installMode := readInstallMode(opts.ConfigDir)
+
+	if installMode == "go-install" {
+		return updateGoInstall(opts.ClaudeMDPath, out, errOut)
 	}
 
-	// Step 2: Record the current HEAD revision.
-	oldRev, err := gitRevParse(opts.CloneDir, "HEAD")
+	return updateSource(opts.CloneDir, opts.ClaudeMDPath, out, errOut)
+}
+
+// updateSource handles update for clone-based installs via git pull.
+func updateSource(cloneDir, claudeMDPath string, out, errOut io.Writer) error {
+	// Validate CloneDir is a git repository.
+	gitDir := filepath.Join(cloneDir, ".git")
+	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
+		return fmt.Errorf("err:user %q is not a git repository", cloneDir)
+	}
+
+	// Record the current HEAD revision.
+	oldRev, err := gitRevParse(cloneDir, "HEAD")
 	if err != nil {
 		return fmt.Errorf("get current HEAD: %w", err)
 	}
 
-	// Step 3: Run "git pull --ff-only".
+	// Run "git pull --ff-only".
 	pullCmd := exec.Command("git", "pull", "--ff-only")
-	pullCmd.Dir = opts.CloneDir
+	pullCmd.Dir = cloneDir
 	pullOutput, pullErr := pullCmd.CombinedOutput()
 	if pullErr != nil {
 		if strings.Contains(string(pullOutput), "Not possible to fast-forward") ||
@@ -371,8 +470,8 @@ func UpdateCmd(opts UpdateOptions) error {
 		return fmt.Errorf("git pull: %s", strings.TrimSpace(string(pullOutput)))
 	}
 
-	// Step 4: Get new HEAD revision.
-	newRev, err := gitRevParse(opts.CloneDir, "HEAD")
+	// Get new HEAD revision.
+	newRev, err := gitRevParse(cloneDir, "HEAD")
 	if err != nil {
 		return fmt.Errorf("get new HEAD: %w", err)
 	}
@@ -382,21 +481,59 @@ func UpdateCmd(opts UpdateOptions) error {
 	// Show commit log between old and new revisions if they differ.
 	if oldRev != newRev {
 		logCmd := exec.Command("git", "log", "--oneline", oldRev+".."+newRev)
-		logCmd.Dir = opts.CloneDir
+		logCmd.Dir = cloneDir
 		logOutput, _ := logCmd.Output()
 		if len(logOutput) > 0 {
 			fmt.Fprintf(out, "%s\n", strings.TrimSpace(string(logOutput)))
 		}
 	}
 
-	// Step 5: Re-inject the GLM section into CLAUDE.md.
-	template := loadGLMTemplate(opts.CloneDir)
-	if err := InjectClaudeMD(opts.ClaudeMDPath, template); err != nil {
+	// Re-inject the GLM section into CLAUDE.md.
+	template := loadGLMTemplate(cloneDir)
+	if err := InjectClaudeMD(claudeMDPath, template); err != nil {
 		return fmt.Errorf("inject CLAUDE.md: %w", err)
 	}
 
 	fmt.Fprintln(out, "Update complete.")
 	return nil
+}
+
+// updateGoInstall handles update for go-install-based installs.
+func updateGoInstall(claudeMDPath string, out, errOut io.Writer) error {
+	fmt.Fprintln(out, "Updating via go install...")
+	goCmd := exec.Command("go", "install", "github.com/veschin/GoLeM/cmd/glm@latest")
+	goCmd.Stdout = out
+	goCmd.Stderr = errOut
+	if err := goCmd.Run(); err != nil {
+		return fmt.Errorf("go install: %w", err)
+	}
+
+	// Re-inject CLAUDE.md with default template (no clone dir for go-install).
+	if err := InjectClaudeMD(claudeMDPath, glmSubagentTemplate); err != nil {
+		return fmt.Errorf("inject CLAUDE.md: %w", err)
+	}
+
+	fmt.Fprintln(out, "Update complete.")
+	return nil
+}
+
+// readInstallMode reads the install_mode from config.json in configDir.
+// Returns "source" as default if config.json is missing or unreadable.
+func readInstallMode(configDir string) string {
+	data, err := os.ReadFile(filepath.Join(configDir, "config.json"))
+	if err != nil {
+		return "source"
+	}
+	var meta struct {
+		InstallMode string `json:"install_mode"`
+	}
+	if err := json.Unmarshal(data, &meta); err != nil {
+		return "source"
+	}
+	if meta.InstallMode == "" {
+		return "source"
+	}
+	return meta.InstallMode
 }
 
 // gitRevParse runs "git rev-parse --short <ref>" in dir and returns the output.
