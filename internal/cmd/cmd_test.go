@@ -443,6 +443,9 @@ func TestStartCommandWritesPIDBeforePrintingJobID(t *testing.T) {
 	if printed != result.JobID {
 		t.Errorf("stdout: got %q, want %q", printed, result.JobID)
 	}
+
+	// Allow background goroutine to finish before TempDir cleanup.
+	time.Sleep(50 * time.Millisecond)
 }
 
 // ─── AC8: Start returns immediately ──────────────────────────────────────────
@@ -472,6 +475,9 @@ func TestStartCommandReturnsImmediatelyWithExitCode0(t *testing.T) {
 	if printed != result.JobID {
 		t.Errorf("stdout: got %q, want job ID %q (no decoration)", printed, result.JobID)
 	}
+
+	// Allow background goroutine to finish before TempDir cleanup.
+	time.Sleep(50 * time.Millisecond)
 }
 
 // ─── AC9: Start background goroutine ─────────────────────────────────────────
